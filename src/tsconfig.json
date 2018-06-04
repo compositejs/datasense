@@ -1,0 +1,7 @@
+{
+    "compilerOptions": {
+        "outFile": "../dist/datasense.js",
+        "noImplicitAny": true,
+        "target": "es6"
+    }
+}
