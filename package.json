@@ -1,0 +1,32 @@
+{
+  "name": "datasense",
+  "version": "0.1.0",
+  "description": "A set of powerful utilities and classes for accessing and observing data.",
+  "main": "index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "test": "node ./test/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/compositejs/datasense.git"
+  },
+  "keywords": [
+    "observable",
+    "data flow"
+  ],
+  "author": "Kingcean Tuan <kingcean@live.com> (http://kingcean.org)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/compositejs/datasense/issues"
+  },
+  "homepage": "https://github.com/compositejs/datasense#readme",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-sourcemaps": "^2.6.4",
+    "gulp-typescript": "^4.0.2",
+    "gulp-uglify": "^3.0.0",
+    "typescript": "^2.9.1",
+    "vinyl-buffer": "^1.0.1"
+  }
+}

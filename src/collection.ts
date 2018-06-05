@@ -11,7 +11,7 @@ namespace DataSense.Collection {
     export function findIndex(list: any[], item: any, compare?: CompareConditionContract) {
         if (!list || item == null) return -1;
         if (!list.findIndex) list.findIndex = (callback) => {
-            var resultIndex = -1;
+            let resultIndex = -1;
             list.some((ele, eleIndex, eleArr) => {
                 if (!callback(ele, eleIndex, eleArr)) return false;
                 resultIndex = eleIndex;
@@ -38,9 +38,9 @@ namespace DataSense.Collection {
      * @param {string | function} compare  The property key; or, a function.
      */
     export function remove(list: any[], item: any, compare?: CompareConditionContract) {
-        var count = 0;
+        let count = 0;
         while (true) {
-            var index = findIndex(list, item, compare);
+            let index = findIndex(list, item, compare);
             if (index < 0) break;
             list.splice(index, 1);
             count++;

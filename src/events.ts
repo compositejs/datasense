@@ -1,10 +1,16 @@
 namespace DataSense {
 
-    var inner = {
+    let inner = {
         eventPrefix: "ev-"
     };
 
     export type ChangeActionContract = "add" | "remove" | "update" | "delta" | "none" | "invalid" | "unknown";
+
+    export interface FireInfoContract {
+        message?: string,
+        source?: string,
+        data?: any
+    }
 
     export interface ChangedInfoContract<T> {
         key?: string;
@@ -29,7 +35,7 @@ namespace DataSense {
     export type OccurModelContract<T> = { h: (value: T) => void, thisArg: any, delay: boolean | number };
 
     export interface EventOptionsContract {
-        delay?: number | boolean | DelayOptionsContract;
+        delay?: number | boolean;
         invalid?: number | boolean | ((ev: any) => boolean);
         invalidForNextTime?: boolean;
         arg?: any;
@@ -42,30 +48,32 @@ namespace DataSense {
         readonly registerDate: Date;
         readonly arg: any;
         readonly message: string;
+        readonly source: string;
+        readonly additional: any;
     }
 
     export interface EventRegisterResultContract<T> extends DisposableContract {
         readonly key: string,
         readonly count: number,
         readonly registerDate: Date,
-        fire(ev: T, message?: string): void
+        fire(ev: T, message?: FireInfoContract | string): void
     }
 
     export interface AnyEventRegisterResultContract extends DisposableContract {
         readonly count: number,
         readonly registerDate: Date,
-        fire(key: string, ev: any, message?: string): void
+        fire(key: string, ev: any, message?: FireInfoContract | string): void
     }
 
     export class EventObservable implements DisposableArrayContract {
         private _instance: {
             push(key: string, obj: any): number,
             remove(key: string, obj?: any): number,
-            fire(key: string, ev: any, message: string, obj?: any): void
+            fire(key: string, ev: any, message?: FireInfoContract | string, obj?: any): void
         } & DisposableArrayContract;
 
-        public constructor(firer: EventObservable | ((fire: (key: string, ev: any, message?: string) => void) => void)) {
-            var disposable = new DisposableArray();
+        public constructor(firer: EventObservable | ((fire: (key: string, ev: any, message?: FireInfoContract | string) => void) => void)) {
+            let disposable = new DisposableArray();
             if ((firer instanceof EventObservable) && firer._instance) {
                 this._instance = {
                     ...firer._instance,
@@ -79,12 +87,12 @@ namespace DataSense {
                 return;
             }
 
-            var store: any = {};
-            var furtherHandlers: any[] = [];
-            var remove = (key: string, obj: any) => {
+            let store: any = {};
+            let furtherHandlers: any[] = [];
+            let remove = (key: string, obj: any) => {
                 if (key === null) {
                     if (obj) return Collection.remove(furtherHandlers, obj);
-                    var count2 = furtherHandlers.length;
+                    let count2 = furtherHandlers.length;
                     furtherHandlers = [];
                     return count2;
                 }
@@ -93,11 +101,11 @@ namespace DataSense {
                 key = inner.eventPrefix + key;
                 if (obj) return Collection.remove(store[key], obj);
                 if (!store[key]) return 0;
-                var count = store[key].length;
+                let count = store[key].length;
                 store[key] = [];
                 return count;
             };
-            var process = (key: string, obj: {
+            let process = (key: string, obj: {
                 h: ((ev: any, controller: EventHandlerControllerContract) => void)[],
                 thisArg: any,
                 options: EventOptionsContract,
@@ -105,9 +113,9 @@ namespace DataSense {
                 time: Date,
                 latestFireDate: Date,
                 count: number
-            }, ev: any, message: string, further: boolean) => {
+            }, ev: any, message: FireInfoContract | string, further: boolean) => {
                 if (obj.isInvalid) return;
-                var isInvalid = false;
+                let isInvalid = false;
                 if (obj.options.invalid) {
                     if (obj.options.invalid === true) {
                         isInvalid = true;
@@ -127,32 +135,41 @@ namespace DataSense {
                 }
 
                 if (obj.count < Number.MAX_SAFE_INTEGER) obj.count++;
-                obj.h.forEach(h => {
-                    if (typeof h !== "function") return;
-                    h.call(obj.thisArg, ev, {
-                        get key() {
-                            return key;
-                        },
-                        get count() {
-                            return obj.count;
-                        },
-                        get fireDate() {
-                            return obj.latestFireDate;
-                        },
-                        get registerDate() {
-                            return obj.time;
-                        },
-                        get arg() {
-                            return obj.options.arg;
-                        },
-                        get message() {
-                            return message;
-                        },
-                        dispose() {
-                            remove(key, obj);
-                        }
-                    } as EventHandlerControllerContract);
-                });
+                let fireObj = typeof message === "string" ? { message } : (message || {});
+                delay(() => {
+                    obj.h.forEach(h => {
+                        if (typeof h !== "function") return;
+                        h.call(obj.thisArg, ev, {
+                            get key() {
+                                return key;
+                            },
+                            get count() {
+                                return obj.count;
+                            },
+                            get fireDate() {
+                                return obj.latestFireDate;
+                            },
+                            get registerDate() {
+                                return obj.time;
+                            },
+                            get arg() {
+                                return obj.options.arg;
+                            },
+                            get message() {
+                                return fireObj.message;
+                            },
+                            get source() {
+                                return fireObj.source;
+                            },
+                            get additional() {
+                                return fireObj.data;
+                            },
+                            dispose() {
+                                remove(key, obj);
+                            }
+                        } as EventHandlerControllerContract);
+                    });
+                }, obj.options.delay);
             };
 
             this._instance = {
@@ -182,11 +199,12 @@ namespace DataSense {
                         obj.latestFireDate = new Date();
                         process(key, obj, ev, message, false);
                     } else {
-                        obj.latestFireDate = new Date();
                         (store[key] as any[]).forEach(item => {
+                            item.latestFireDate = new Date();
                             process(key, item, ev, message, false);
                         });
                         furtherHandlers.forEach(item => {
+                            item.latestFireDate = new Date();
                             process(key, item, ev, message, true);
                         });
                     }
@@ -220,7 +238,7 @@ namespace DataSense {
             if (!h) h = [];
             if (!(h instanceof Array)) h = [h];
             if (!key || typeof key !== "string" || !h || !h.length) {
-                var now = new Date();
+                let now = new Date();
                 return {
                     get key() {
                         return key;
@@ -231,15 +249,15 @@ namespace DataSense {
                     get registerDate() {
                         return now;
                     },
-                    fire(ev: T, message?: string) {},
+                    fire(ev: T, message?: FireInfoContract | string) {},
                     dispose() {}
                 };
             }
 
             if (!options) options = {};
-            var obj = { h, thisArg, options, time: new Date(), count: 0 };
+            let obj = { h, thisArg, options, time: new Date(), count: 0 };
             this._instance.push(key, obj);
-            var result: EventRegisterResultContract<T> = {
+            let result: EventRegisterResultContract<T> = {
                 get key() {
                     return key;
                 },
@@ -249,7 +267,7 @@ namespace DataSense {
                 get registerDate() {
                     return obj.time;
                 },
-                fire(ev: T, message?: string) {
+                fire(ev: T, message?: FireInfoContract | string) {
                     this._instance.fire(key, ev, obj, message);
                 },
                 dispose() {
@@ -277,16 +295,16 @@ namespace DataSense {
             if (!h) h = [];
             if (!(h instanceof Array)) h = [h];
             if (!options) options = {};
-            var obj = { h, thisArg, options, time: new Date(), count: 0 };
+            let obj = { h, thisArg, options, time: new Date(), count: 0 };
             this._instance.push(null, obj);
-            var result: AnyEventRegisterResultContract = {
+            let result: AnyEventRegisterResultContract = {
                 get count() {
                     return obj.count;
                 },
                 get registerDate() {
                     return obj.time;
                 },
-                fire(key: string, ev: any, message?: string) {
+                fire(key: string, ev: any, message?: FireInfoContract | string) {
                     this._instance.fire(key, ev, obj, message);
                 },
                 dispose() {
@@ -310,14 +328,14 @@ namespace DataSense {
             h: (newValue: KeyValueContract<any>) => void,
             thisArg?: any
         ): SubscriberCompatibleResultContract {
-            var result: any;
+            let result: any;
             if (typeof h !== "function") {
                 result = function () {};
                 result.dispose = function () {};
                 return result;
             }
 
-            var dispose = this.onAny(ev => {
+            let dispose = this.onAny(ev => {
                 h.call(thisArg, ev);
             });
             this._instance.pushDisposable(dispose);
@@ -334,14 +352,14 @@ namespace DataSense {
             thisArg?: any,
             convertor?: (newValue: any) => T
         ): SubscriberCompatibleResultContract {
-            var result: any;
+            let result: any;
             if (typeof h !== "function") {
                 result = function () {};
                 result.dispose = function () {};
                 return result;
             }
 
-            var dispose = this.on(key, ev => {
+            let dispose = this.on(key, ev => {
                 if (typeof convertor === "function") ev = convertor(ev);
                 h.call(thisArg, ev);
             });
@@ -372,13 +390,13 @@ namespace DataSense {
                 get registerDate(): Date {
                     return undefined;
                 },
-                fire(ev: any, message?: string) {},
+                fire(ev: any, message?: FireInfoContract | string) {},
                 dispose() {}
             };
         }
 
         public static createNothingSubscribe(): SubscriberCompatibleResultContract {
-            var result: any = function () {};
+            let result: any = function () {};
             result.dispose = function () {};
             return result;
         }
@@ -402,7 +420,7 @@ namespace DataSense {
             options?: EventOptionsContract,
             disposableArray?: DisposableArrayContract
         ): EventRegisterResultContract<T> {
-            var result = this._eventObservable.on(this.key, h, thisArg, options, disposableArray);
+            let result = this._eventObservable.on(this.key, h, thisArg, options, disposableArray);
             this._disposable.push(result);
             return result;
         }
@@ -411,13 +429,13 @@ namespace DataSense {
             h: EventHandlerContract<any> | EventHandlerContract<any>[],
             thisArg?: any
         ) {
-            var result = this._eventObservable.once<T>(this.key, h, thisArg);
+            let result = this._eventObservable.once<T>(this.key, h, thisArg);
             this._disposable.push(result);
             return result;
         }
 
         public subscribe(h: (newValue: T) => void, thisArg?: any): SubscriberCompatibleResultContract {
-            var result = this._eventObservable.subscribeSingle<T>(this.key, h, thisArg);
+            let result = this._eventObservable.subscribeSingle<T>(this.key, h, thisArg);
             this._disposable.push(result);
             return result;
         }
@@ -432,16 +450,20 @@ namespace DataSense {
     }
 
     export class EventController extends EventObservable {
-        private _fireHandler: (key: string, ev: any, message?: string) => void;
+        private _fireHandler: (key: string, ev: any, message?: FireInfoContract | string) => void;
 
         constructor() {
+            let f: (key: string, ev: any, message?: FireInfoContract | string) => void;
             super(fire => {
-                this._fireHandler = fire;
+                f = fire;
             });
+            this._fireHandler = f;
         }
 
-        fire(key: string, ev: any, message?: string): void {
-            this._fireHandler(key, ev, message);
+        fire(key: string, ev: any, message?: FireInfoContract | string, delay?: number | boolean): void {
+            DataSense.delay(() => {
+                this._fireHandler(key, ev, message);
+            }, delay);
         }
     }
 
@@ -462,14 +484,14 @@ namespace DataSense {
             }
 
             if (typeof executor !== "function") return;
-            var resolveH: any, rejectH: any;
+            let resolveH: any, rejectH: any;
             this.promise = new Promise<T>((resolve, reject) => {
                 resolveH = resolve;
                 rejectH = reject;
             });
-            var process = (success: boolean, value: any) => {
+            let process = (success: boolean, value: any) => {
                 if (this._result.success !== undefined) return;
-                var list: OccurModelContract<T>[];
+                let list: OccurModelContract<T>[];
                 if (success) {
                     this._result.value = value;
                     this._result.success = true;
@@ -560,12 +582,17 @@ namespace DataSense {
         };
 
         constructor() {
+            let a: {
+                resolve(value: T): void,
+                reject(err: any): void
+            };
             super((resolve, reject) => {
-                this._instance ={
+                a = {
                     resolve: resolve,
                     reject: reject
                 };
-            })
+            });
+            this._instance = a;
         }
 
         resolve(value: T) {
@@ -623,7 +650,7 @@ namespace DataSense {
 
         public static push(list: ChangedInfo<any>[], ...items: ChangedInfo<any>[]): void {
             if (!list) return;
-            var index = -1;
+            let index = -1;
             items.forEach(item => {
                 if (!item || !item.key) return;
                 list.some((test, i) => {

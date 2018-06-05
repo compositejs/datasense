@@ -1,6 +1,6 @@
 namespace DataSense {
 
-    export type ValueModifierContract<T> = (newValue: T, message?: string) => ValueResolveContract<T>;
+    export type ValueModifierContract<T> = (newValue: T, message?: FireInfoContract | string) => ValueResolveContract<T>;
 
     export interface ValueResolveContract<T> {
         isAborted?: boolean,
@@ -10,8 +10,8 @@ namespace DataSense {
 
     export interface ValueAccessorContract<T> {
         get(): T;
-        set(value: T, message?: string): ChangedInfo<T> | undefined;
-        customizedSet(valueRequested: any, message?: string): ValueResolveContract<T>;
+        set(value: T, message?: FireInfoContract | string): ChangedInfo<T> | undefined;
+        customizedSet(valueRequested: any, message?: FireInfoContract | string): ValueResolveContract<T>;
         getFormatter(): (value: any) => T;
         setFormatter(h: (value: any) => T): void;
         getValidator(): (value: T) => boolean;
@@ -19,17 +19,17 @@ namespace DataSense {
         getStore(storePropKey: string): any;
         setStore(storePropKey: string, value: any): void;
         removeStore(...storePropKey: string[]): void;
-        sendNotify(data: any, message?: string): void;
-        requestReceived: SingleEventObservable<any>;
+        sendNotify(data: any, message?: FireInfoContract | string): void;
+        registerRequestHandler(type: string, h: (value: any) => void): boolean;
     }
 
     export interface PropsAccessorContract {
         has(key: string): boolean;
         get(key: string): any;
-        set(key: string, value: any, message: string): ChangedInfo<any>;
-        customizedSet(key: string, valueRequested: any, message: string): ValueResolveContract<any>;
-        remove(keys: string | string[], message: string): number;
-        batchProp(obj: any, removeKeys: string[], initObj: any, message: string): void;
+        set(key: string, value: any, message?: FireInfoContract | string): ChangedInfo<any>;
+        customizedSet(key: string, valueRequested: any, message?: FireInfoContract | string): ValueResolveContract<any>;
+        remove(keys: string | string[], message: FireInfoContract | string): number;
+        batchProp(obj: any, removeKeys: string[], initObj: any, message: FireInfoContract | string): void;
         keys(): string[],
         getFormatter(): (key: string, value: any) => any;
         setFormatter(h: (key: string, value: any) => any): void;
@@ -38,17 +38,19 @@ namespace DataSense {
         getStore(key: string, storePropKey: string): any;
         setStore(key: string, storePropKey: string, value: any): void;
         removeStore(key: string, ...storePropKey: string[]): void;
-        sendPropNotify(key: string, data: any, message?: string): void;
+        sendPropNotify(key: string, data: any, message?: FireInfoContract | string): void;
+        registerPropRequestHandler(key: string, type: string, h: (value: any) => void): boolean;
+        registerRequestHandler(type: string, h: (value: any) => void): boolean;
     }
 
     export interface ChangeFlowRegisteredContract extends DisposableContract {
         registeredDate: Date;
         count: number;
-        sync(message?: string): void;
+        sync(message?: FireInfoContract | string): void;
     }
 
-    var dataUtilities = {
-        setPromise<T>(setter: (value: T, message?: string) => ChangedInfo<T>, value: Promise<T>, compatible?: boolean, message?: string): Promise<T> {
+    let dataUtilities = {
+        setPromise<T>(setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>, value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
             if (value === undefined) return new Promise((resolve, reject) => {
                 reject("value is undefined")
             });
@@ -67,51 +69,58 @@ namespace DataSense {
                 return r;
             });
         },
-        setSubscribe<T>(setter: (value: T, message?: string) => ChangedInfo<T>, value: SubscriberContract<T>, message?: string, callbackfn?: (ev: ChangedInfo<T>, message: string) => void, thisArg?: any) {
-            var needCallback = typeof callbackfn === "function";
+        setSubscribe<T>(setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>, value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
+            let needCallback = typeof callbackfn === "function";
             return value.subscribe(newValue => {
-                var result = setter(newValue, message);
-                if (needCallback) callbackfn.call(thisArg, result, message)
+                let result = setter(newValue, message);
+                if (!needCallback) return;
+                let fireObj = typeof message === "string" ? { message } : (message || {});
+                callbackfn.call(thisArg, result, fireObj)
             });
         },
         propsAccessor(): {
             accessor: PropsAccessorContract,
             pushFlows(key: string, ...flows: ValueModifierContract<any>[]): ChangeFlowRegisteredContract,
             clearFlows(key: string): number,
-            sendPropRequest(key: string, data: any, message?: string): void,
-            sendPropBroadcast(key: string, data: any, message?: string): void,
+            sendPropRequest(key: string, type: string, data: any, thisArg: any): void,
+            sendRequest(type: string, data: any, thisArg: any): void,
+            sendPropBroadcast(key: string, data: any, message?: FireInfoContract | string): void,
+            sendBroadcast(data: any, message?: FireInfoContract | string): void,
             eventObservable: EventObservable
         } {
-            var store: any = {};
-            var eventManager = new EventController();
-            var hasProp = (key: string) => {
+            let store: any = {};
+            let eventManager = new EventController();
+            let hasProp = (key: string) => {
                 return (store as Object).hasOwnProperty(key) && (store[key] as Object).hasOwnProperty("value");
             };
-            var getProp = (key: string, ensure: boolean): {
+            let getProp = (key: string, ensure: boolean): {
                 value: any,
                 handlers: any[],
                 store: any,
                 flows: ValueModifierContract<any>[],
-                updating?: { value: any, custom?: boolean, cancel(err: any): void }
+                updating?: { value: any, custom?: boolean, cancel(err: any): void },
+                factory: any
             } => {
                 if (!key || typeof key !== "string") return undefined;
-                var obj = store[key];
+                let obj = store[key];
                 if (!obj) {
                     obj = {
                         handlers: [],
                         store: {},
-                        flows: []
+                        flows: [],
+                        factory: {}
                     };
                     if (ensure) store[key] = obj;
                 }
 
                 return obj;
             };
-            var formatter: ((key: string, value: any) => any);
-            var validator: ((key: string, value: any) => boolean);
+            let formatter: ((key: string, value: any) => any);
+            let validator: ((key: string, value: any) => boolean);
+            let actionRequests: any = {};
 
-            var setProp = (key: string, value: any, message: string, init?: boolean, getResp?: boolean): ChangedInfo<any> => {
-                var prop = getProp(key, true);
+            let setProp = (key: string, value: any, message: FireInfoContract | string, init?: boolean, getResp?: boolean): ChangedInfo<any> => {
+                let prop = getProp(key, true);
                 if (!prop) return getResp ? new ChangedInfo(null, "invalid", false, undefined, undefined, value, "key is not valid") : undefined;
                 if (init && (prop as Object).hasOwnProperty("value")) return getResp ? ChangedInfo.fail(key, prop.value, value, "ignore") : undefined;
                 if (prop.updating) {
@@ -119,26 +128,26 @@ namespace DataSense {
                     prop.updating.cancel("duplicated");
                 }
 
-                var onceC = new OnceController();
-                var setToken = prop.updating = {
+                let onceC = new OnceController();
+                let setToken = prop.updating = {
                     value,
                     cancel(err) {
                         onceC.reject(err);
                     }
                 };
-                var propExist = hasProp(key);
-                var oldValue = prop.value;
+                let propExist = hasProp(key);
+                let oldValue = prop.value;
                 eventManager.fire("ing-" + key, new ChangingInfo(key, oldValue, value, onceC.createObservable()));
                 eventManager.fire("prop-changing", new ChangingInfo(key, oldValue, value, onceC.createObservable()));
-                var flowTokens = prop.flows.map(item => {
+                let flowTokens = prop.flows.map(item => {
                     if (typeof item !== "function") return undefined;
                     return item(value, message);
                 });
-                var valueRequested = value;
+                let valueRequested = value;
                 if (typeof formatter === "function") value = formatter(key, value);
                 if (typeof validator === "function" && !validator(key, value)) {
                     if (setToken !== prop.updating) return getResp ? ChangedInfo.fail(key, prop.value, value, "expired") : undefined;
-                    var errorInfo = ChangedInfo.fail(key, oldValue, value, "invalid");
+                    let errorInfo = ChangedInfo.fail(key, oldValue, value, "invalid");
                     onceC.reject("invalid");
                     eventManager.fire("err-" + key, errorInfo);
                     eventManager.fire("prop-failed", errorInfo);
@@ -154,7 +163,7 @@ namespace DataSense {
                 onceC.resolve(value);
                 if (oldValue === value) return ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
                 prop.value = value;
-                var info = ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
+                let info = ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
                 eventManager.fire("ed-" + key, info);
                 eventManager.fire("prop-changed", info);
                 flowTokens.forEach(item => {
@@ -163,26 +172,26 @@ namespace DataSense {
                 });
                 return info;
             };
-            var removeProp = (keys: string | string[], message: string) => {
+            let removeProp = (keys: string | string[], message: FireInfoContract | string) => {
                 if (!keys) return [];
                 if (typeof keys === "string") keys = [keys];
                 if (!(keys instanceof Array)) return [];
-                var result: ChangedInfo<any>[] = [];
+                let result: ChangedInfo<any>[] = [];
                 keys.forEach(key => {
-                    var prop = getProp(key, false);
+                    let prop = getProp(key, false);
                     if (!prop) return;
-                    var propExist = hasProp(key);
+                    let propExist = hasProp(key);
                     if (!propExist) return;
-                    var oldValue = prop.value;
-                    var onceC = new OnceController();
+                    let oldValue = prop.value;
+                    let onceC = new OnceController();
                     eventManager.fire("ing-" + key, new ChangingInfo(key, oldValue, undefined, onceC.createObservable()));
                     eventManager.fire("prop-changing", new ChangingInfo(key, oldValue, undefined, onceC.createObservable()));
-                    var flowTokens = prop.flows.map(item => {
+                    let flowTokens = prop.flows.map(item => {
                         if (typeof item !== "function") return undefined;
                         return item(undefined, message);
                     });
                     delete prop.value;
-                    var info = ChangedInfo.success(key, undefined, oldValue);
+                    let info = ChangedInfo.success(key, undefined, oldValue);
                     result.push(info);
                     onceC.resolve(undefined);
                     if (oldValue === undefined) return;
@@ -195,21 +204,21 @@ namespace DataSense {
                 });
                 return result;
             };
-            var changerClient: PropsAccessorContract = {
+            let changerClient: PropsAccessorContract = {
                 has(key) {
                     return hasProp(key);
                 },
                 get(key) {
-                    var prop = getProp(key, false);
+                    let prop = getProp(key, false);
                     return prop ? prop.value : undefined;
                 },
                 set(key, value, message) {
-                    var info = setProp(key, value, message, false, true);
+                    let info = setProp(key, value, message, false, true);
                     if (info) eventManager.fire("batch-changed", { changed: info }, message);
                     return info;
                 },
                 customizedSet(key, valueRequested, message) {
-                    var prop = getProp(key, true);
+                    let prop = getProp(key, true);
                     if (!prop) return {
                         isAborted: true,
                         resolve(finalValue) {},
@@ -224,13 +233,13 @@ namespace DataSense {
                         prop.updating.cancel("expired");
                     }
 
-                    var flowTokens: ValueResolveContract<any>[];
-                    var done = false;
-                    var propExist = hasProp(key);
-                    var oldValue = prop.value;
-                    var obj: ValueResolveContract<any>;
-                    var onceC = new OnceController();
-                    var setToken = prop.updating = {
+                    let flowTokens: ValueResolveContract<any>[];
+                    let done = false;
+                    let propExist = hasProp(key);
+                    let oldValue = prop.value;
+                    let obj: ValueResolveContract<any>;
+                    let onceC = new OnceController();
+                    let setToken = prop.updating = {
                         value: valueRequested,
                         custom: true,
                         cancel(err) {
@@ -252,7 +261,7 @@ namespace DataSense {
                             onceC.resolve(finalValue);
                             if (oldValue === finalValue) return ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
                             prop.value = finalValue;
-                            var info = ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
+                            let info = ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
                             eventManager.fire("ed-" + key, info);
                             eventManager.fire("prop-changed", info);
                             flowTokens.forEach(item => {
@@ -266,7 +275,7 @@ namespace DataSense {
                             if (setToken !== prop.updating) return;
                             prop.updating = null;
                             obj.isAborted = true;
-                            var errorInfo = ChangedInfo.fail(key, oldValue, valueRequested, "invalid");
+                            let errorInfo = ChangedInfo.fail(key, oldValue, valueRequested, "invalid");
                             onceC.reject("invalid");
                             eventManager.fire("err-" + key, errorInfo);
                             eventManager.fire("prop-failed", errorInfo);
@@ -279,23 +288,23 @@ namespace DataSense {
                     return obj;
                 },
                 remove(keys, message) {
-                    var changed = removeProp(keys, message);
+                    let changed = removeProp(keys, message);
                     if (changed.length) eventManager.fire("batch-changed", { changed });
                     return changed.length;
                 },
                 batchProp(obj, removeKeys, initObj, message) {
-                    var changed: ChangedInfo<any>[] = [];
-                    if (obj) for (var key in obj) {
+                    let changed: ChangedInfo<any>[] = [];
+                    if (obj) for (let key in obj) {
                         if (!key || typeof key !== "string" || !(obj as Object).hasOwnProperty(key)) continue;
-                        var actionResult = setProp(key, obj[key], message);
+                        let actionResult = setProp(key, obj[key], message);
                         ChangedInfo.push(changed, actionResult);
                     }
 
                     ChangedInfo.push(changed, ...removeProp(removeKeys, message));
 
-                    if (initObj) for (var key in initObj) {
+                    if (initObj) for (let key in initObj) {
                         if (!key || typeof key !== "string" || !(initObj as Object).hasOwnProperty(key)) continue;
-                        var actionResult = setProp(key, obj[key], message, true);
+                        let actionResult = setProp(key, obj[key], message, true);
                         ChangedInfo.push(changed, actionResult);
                     }
 
@@ -323,7 +332,7 @@ namespace DataSense {
                     getProp(key, true).store[storePropKey] = value;
                 },
                 removeStore(key, ...storePropKey) {
-                    var prop = getProp(key, false).store;
+                    let prop = getProp(key, false).store;
                     storePropKey.forEach(storePropKey => {
                         delete prop.value;
                     });
@@ -331,21 +340,34 @@ namespace DataSense {
                 sendPropNotify(key, data, message?) {
                     if (!key || typeof key !== "string") return;
                     eventManager.fire("ntf-" + key, data, message);
+                },
+                registerPropRequestHandler(key, type, h) {
+                    let prop = getProp(key, true).factory;
+                    if (!h) delete prop[type];
+                    else if (typeof h !== "function") return false;
+                    else prop[type] = h;
+                    return true;
+                },
+                registerRequestHandler(type, h) {
+                    if (!h) delete actionRequests[type];
+                    else if (typeof h !== "function") return false;
+                    else actionRequests[type] = h;
+                    return true;
                 }
             };
             return {
                 accessor: changerClient,
                 pushFlows(key, ...flows) {
-                    var now = new Date();
+                    let now = new Date();
                     flows = flows.filter(item => typeof item === "function");
-                    var count = getProp(key, true).flows.push(...flows);
+                    let count = getProp(key, true).flows.push(...flows);
                     return {
                         registeredDate: now,
                         count,
-                        sync(message?: string) {
+                        sync(message?: FireInfoContract | string) {
                             flows.forEach(item => {
-                                var currentValue = changerClient.get(key);
-                                var token = item(currentValue, message);
+                                let currentValue = changerClient.get(key);
+                                let token = item(currentValue, message);
                                 if (token && typeof token.resolve === "function") token.resolve(currentValue);
                             });
                         },
@@ -357,18 +379,27 @@ namespace DataSense {
                     };
                 },
                 clearFlows(key) {
-                    var prop = getProp(key, false);
-                    var count = prop.flows.length;
+                    let prop = getProp(key, false);
+                    let count = prop.flows.length;
                     prop.flows = [];
                     return count;
                 },
-                sendPropRequest(key, data, message?) {
-                    if (!key || typeof key !== "string") return;
-                    eventManager.fire("req-" + key, data, message);
+                sendPropRequest(key, type, value, thisArg) {
+                    let requestH = getProp(key, false).factory[type] as Function;
+                    if (typeof requestH !== "function") return;
+                    requestH.call(thisArg, value);
+                },
+                sendRequest(type, value, thisArg) {
+                    let requestH = actionRequests[type] as Function;
+                    if (typeof requestH !== "function") return;
+                    requestH.call(thisArg, value);
                 },
                 sendPropBroadcast(key, data, message?) {
                     if (!key || typeof key !== "string") return;
                     eventManager.fire("cst-" + key, data, message);
+                },
+                sendBroadcast(data, message?) {
+                    eventManager.fire("broadcast", data, message);
                 },
                 eventObservable: eventManager.createObservable()
             }
@@ -383,8 +414,8 @@ namespace DataSense {
             get(): T,
             pushFlows(...flows: ValueModifierContract<any>[]): ChangeFlowRegisteredContract,
             clearFlows(): number,
-            sendRequest(data: any, message?: string): void,
-            sendBroadcast(data: any, message?: string): void,
+            sendRequest(type: string, value: any): void,
+            sendBroadcast(data: any, message?: FireInfoContract | string): void,
             eventObservable: EventObservable
         } & DisposableArrayContract;
 
@@ -403,8 +434,8 @@ namespace DataSense {
          * @param changer  A function to called that you can get the setter of the value by the argument.
          */
         constructor(changer: ValueObservable<T> | ((changed: ValueAccessorContract<T>) => void)) {
-            var disposable = new DisposableArray();
-            var accessKey = "value";
+            let disposable = new DisposableArray();
+            let accessKey = "value";
             if ((changer instanceof ValueObservable) && changer._instance) {
                 this._instance = {
                     ...changer._instance,
@@ -425,9 +456,9 @@ namespace DataSense {
                 return;
             }
 
-            var formatter: (value: any) => T;
-            var validator: (value: T) => boolean;
-            var obj = dataUtilities.propsAccessor();
+            let formatter: (value: any) => T;
+            let validator: (value: T) => boolean;
+            let obj = dataUtilities.propsAccessor();
             obj.accessor.setFormatter((key, value) => {
                 if (typeof formatter !== "function" || key !== accessKey) return value;
                 return formatter(value);
@@ -441,6 +472,7 @@ namespace DataSense {
             this.changeFailed = obj.eventObservable.createSingleObservable("err-" + accessKey);
             this.broadcastReceived = obj.eventObservable.createSingleObservable<any>("cst-" + accessKey);
             this.notifyReceived = obj.eventObservable.createSingleObservable<any>("ntf-" + accessKey);
+            let self = this;
             this._instance = {
                 get() {
                     return obj.accessor.get(accessKey);
@@ -451,8 +483,8 @@ namespace DataSense {
                 clearFlows() {
                     return obj.clearFlows(accessKey);
                 },
-                sendRequest(data, message?) {
-                    obj.sendPropRequest(data, message);
+                sendRequest(type, value) {
+                    obj.sendPropRequest(accessKey, type, value, self);
                 },
                 sendBroadcast(data, message?) {
                     obj.sendPropBroadcast(accessKey, data, message);
@@ -501,7 +533,9 @@ namespace DataSense {
                 sendNotify(data, message?) {
                     obj.accessor.sendPropNotify(accessKey, data, message);
                 },
-                requestReceived: obj.eventObservable.createSingleObservable("req-" + accessKey)
+                registerRequestHandler(type, h) {
+                    return obj.accessor.registerPropRequestHandler(accessKey, type, h);
+                }
             });
         }
 
@@ -526,8 +560,8 @@ namespace DataSense {
             thisArg?: any,
             options?: EventOptionsContract,
             disposableArray?: DisposableArrayContract
-        ): EventRegisterResultContract<T> {
-            return this._instance.eventObservable.on("ing-value", h, thisArg, options, disposableArray);
+        ) {
+            return this._instance.eventObservable.on<ChangingInfo<T>>("ing-value", h, thisArg, options, disposableArray);
         }
 
         public onChanged(
@@ -535,8 +569,8 @@ namespace DataSense {
             thisArg?: any,
             options?: EventOptionsContract,
             disposableArray?: DisposableArrayContract
-        ): EventRegisterResultContract<T> {
-            return this._instance.eventObservable.on("ed-value", h, thisArg, options, disposableArray);
+        ) {
+            return this._instance.eventObservable.on<ChangedInfo<T>>("ed-value", h, thisArg, options, disposableArray);
         }
 
         public onChangeFailed(
@@ -544,37 +578,37 @@ namespace DataSense {
             thisArg?: any,
             options?: EventOptionsContract,
             disposableArray?: DisposableArrayContract
-        ): EventRegisterResultContract<T> {
-            return this._instance.eventObservable.on("err-value", h, thisArg, options, disposableArray);
+        ) {
+            return this._instance.eventObservable.on<ChangedInfo<T>>("err-value", h, thisArg, options, disposableArray);
         }
 
         public onBroadcastReceived(
-            h: EventHandlerContract<ChangingInfo<T>> | EventHandlerContract<ChangingInfo<T>>[],
+            h: EventHandlerContract<any> | EventHandlerContract<any>[],
             thisArg?: any,
             options?: EventOptionsContract,
             disposableArray?: DisposableArrayContract
-        ): EventRegisterResultContract<T> {
-            return this._instance.eventObservable.on("cst-value", h, thisArg, options, disposableArray);
+        ) {
+            return this._instance.eventObservable.on<any>("cst-value", h, thisArg, options, disposableArray);
         }
 
         public onNotifyReceived(
-            h: EventHandlerContract<ChangingInfo<T>> | EventHandlerContract<ChangingInfo<T>>[],
+            h: EventHandlerContract<any> | EventHandlerContract<any>[],
             thisArg?: any,
             options?: EventOptionsContract,
             disposableArray?: DisposableArrayContract
-        ): EventRegisterResultContract<T> {
-            return this._instance.eventObservable.on("ntf-value", h, thisArg, options, disposableArray);
+        ) {
+            return this._instance.eventObservable.on<any>("ntf-value", h, thisArg, options, disposableArray);
         }
 
         public subscribe(h: (newValue: T) => void, thisArg?: any): SubscriberCompatibleResultContract {
             return this._instance.eventObservable.subscribeSingle("ed-value", h, thisArg, (newValue: ChangedInfo<T>) => newValue.value);
         }
 
-        public sendRequest(data: any, message?: string) {
-            this._instance.sendRequest(data, message);
+        public sendRequest(type: string, value: any) {
+            this._instance.sendRequest(type, value);
         }
 
-        public sendBroadcast(data: any, message?: string) {
+        public sendBroadcast(data: any, message?: FireInfoContract | string) {
             this._instance.sendBroadcast(data, message);
         }
 
@@ -587,7 +621,7 @@ namespace DataSense {
         }
 
         public toJSON() {
-            var value = this._instance.get();
+            let value = this._instance.get();
             try {
                 if (value != null) return JSON.stringify(value);
             } catch (ex) {}
@@ -598,48 +632,36 @@ namespace DataSense {
     export class ValueClient<T> extends ValueObservable<T> {
         constructor(
             modifier: (setter: ValueModifierContract<T>) => void,
-            private _setter: (value: T, message?: string) => ChangedInfo<T>,
-            public requestReceived: SingleEventObservable<any>,
-            private _sendNotify: (data: any, message?: string) => void
+            private _setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>,
+            private _sendNotify: (data: any, message?: FireInfoContract | string) => void
         ) {
             super(acc => modifier(acc.customizedSet));
-            if (!requestReceived) this.requestReceived = new SingleEventObservable(null, "none");
-            this.pushDisposable(requestReceived);
         }
 
-        public set(value: T, message?: string): boolean {
+        public set(value: T, message?: FireInfoContract | string): boolean {
             if (typeof this._setter !== "function") return false;
-            var info = this._setter(value, message)
+            let info = this._setter(value, message)
             return info ? info.success : false;
         }
 
-        public setForDetails(value: T, message?: string): ChangedInfo<T> {
+        public setForDetails(value: T, message?: FireInfoContract | string): ChangedInfo<T> {
             if (typeof this._setter !== "function") return ChangedInfo.fail(null, undefined, value, "not implemented");
             return this._setter(value, message);
         }
 
-        public setPromise(value: Promise<T>, compatible?: boolean, message?: string): Promise<T> {
+        public setPromise(value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
             return dataUtilities.setPromise((value, message?) => {
                 return this.setForDetails(value, message);
             }, value, compatible, message);
         }
 
-        public setSubscribe(value: SubscriberContract<T>, message?: string, callbackfn?: (ev: ChangedInfo<T>, message: string) => void, thisArg?: any) {
+        public setSubscribe(value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
             return dataUtilities.setSubscribe((value, message?) => {
                 return this.setForDetails(value, message);
             }, value, message, callbackfn, thisArg);
         }
 
-        public onRequestReceived(
-            h: EventHandlerContract<ChangingInfo<T>> | EventHandlerContract<ChangingInfo<T>>[],
-            thisArg?: any,
-            options?: EventOptionsContract,
-            disposableArray?: DisposableArrayContract
-        ): EventRegisterResultContract<T> {
-            return this.requestReceived.on(h, thisArg, options, disposableArray);
-        }
-
-        public sendNotify(data: any, message?: string) {
+        public sendNotify(data: any, message?: FireInfoContract | string) {
             this._sendNotify(data, message);
         }
     }
@@ -648,41 +670,51 @@ namespace DataSense {
         private _accessor: ValueAccessorContract<T>;
         private _observing: ChangeFlowRegisteredContract;
 
-        public requestReceived: SingleEventObservable<any>;
-
-        public formatter?: (value: any) => T;
-
-        public validator?: (value: T) => boolean;
-
-        constructor() {
-            super(acc => this._accessor = acc);
-            this.requestReceived = this._accessor.requestReceived.createObservable();
-            super.pushDisposable({
-                dispose: () => {
-                    this.stopObserving();
-                }
-            }, this.requestReceived);
+        public get formatter() {
+            return this._accessor.getFormatter();
         }
 
-        public set(value: T, message?: string): boolean {
-            var info = this._accessor.set(value, message);
+        public set formatter(h) {
+            this._accessor.setFormatter(h);
+        }
+
+        public get validator() {
+            return this._accessor.getValidator();
+        }
+
+        public set validator(h) {
+            this._accessor.setValidator(h);
+        }
+
+        constructor() {
+            let a: ValueAccessorContract<T>;
+            super(acc => a = acc);
+            this._accessor = a;
+        }
+
+        public set(value: T, message?: FireInfoContract | string): boolean {
+            let info = this._accessor.set(value, message);
             return info ? info.success : false;
         }
 
-        public setForDetails(value: T, message?: string): ChangedInfo<T> {
+        public setForDetails(value: T, message?: FireInfoContract | string): ChangedInfo<T> {
             return this._accessor.set(value, message);
         }
 
-        public setPromise(value: Promise<T>, compatible?: boolean, message?: string): Promise<T> {
+        public setPromise(value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
             return dataUtilities.setPromise((value, message?) => {
                 return this.setForDetails(value, message);
             }, value, compatible, message);
         }
 
-        public setSubscribe(value: SubscriberContract<T>, message?: string, callbackfn?: (ev: ChangedInfo<T>, message: string) => void, thisArg?: any) {
+        public setSubscribe(value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
             return dataUtilities.setSubscribe((value, message?) => {
                 return this.setForDetails(value, message);
             }, value, message, callbackfn, thisArg);
+        }
+
+        public registerRequestHandler(type: string, h: (value: any) => void) {
+            return this._accessor.registerRequestHandler(type, h);
         }
 
         public observe(value: ValueObservable<T>) {
@@ -694,14 +726,14 @@ namespace DataSense {
         }
 
         public stopObserving() {
-            var disposeObserving = this._observing;
+            let disposeObserving = this._observing;
             if (!disposeObserving) return;
             delete this._observing;
             if (typeof disposeObserving.dispose === "function") disposeObserving.dispose();
         }
 
-        public syncFromObserving(message?: string) {
-            var disposeObserving = this._observing;
+        public syncFromObserving(message?: FireInfoContract | string) {
+            let disposeObserving = this._observing;
             if (!disposeObserving || typeof disposeObserving.sync !== "function") return false;
             disposeObserving.sync(message);
             return true;
@@ -712,10 +744,10 @@ namespace DataSense {
         }
 
         public createClient() {
-            var token: DisposableContract;
-            var client = new ValueClient<T>(modifier => {
+            let token: DisposableContract;
+            let client = new ValueClient<T>(modifier => {
                 token = this.onChanging((ev, evController) => {
-                    var updateToken = modifier(ev.valueRequest, evController.message);
+                    let updateToken = modifier(ev.valueRequest, evController.message);
                     if (!ev.observable) return;
                     ev.observable.onResolved(newValue => {
                         updateToken.resolve(newValue);
@@ -726,21 +758,12 @@ namespace DataSense {
                 });
             }, (value, message?) => {
                 return this.setForDetails(value, message);
-            }, this._accessor.requestReceived.createObservable(), this._accessor.sendNotify);
+            }, this._accessor.sendNotify);
             client.pushDisposable(token);
             return client;
         }
 
-        public onRequestReceived(
-            h: EventHandlerContract<ChangingInfo<T>> | EventHandlerContract<ChangingInfo<T>>[],
-            thisArg?: any,
-            options?: EventOptionsContract,
-            disposableArray?: DisposableArrayContract
-        ): EventRegisterResultContract<T> {
-            return this._accessor.requestReceived.on(h, thisArg, options, disposableArray);
-        }
-
-        public sendNotify(data: any, message?: string) {
+        public sendNotify(data: any, message?: FireInfoContract | string) {
             this._accessor.sendNotify(data, message);
         }
     }
@@ -752,11 +775,15 @@ namespace DataSense {
             keys(): string[],
             pushFlows(key: string, ...flows: ValueModifierContract<any>[]): ChangeFlowRegisteredContract,
             clearFlows(key: string): number,
+            sendPropRequest(key: string, type: string, value: any): void,
+            sendRequest(type: string, value: any): void,
+            sendPropBroadcast(key: string, data: any, message?: FireInfoContract | string): void,
+            sendBroadcast(data: any, message?: FireInfoContract | string): void,
             eventObservable: EventObservable
         } & DisposableArrayContract;
 
         constructor(changer: PropsObservable | ((accessor: PropsAccessorContract) => void)) {
-            var disposable = new DisposableArray();
+            let disposable = new DisposableArray();
             if ((changer instanceof PropsObservable) && changer._instance) {
                 this._instance = {
                     ...changer._instance,
@@ -772,7 +799,7 @@ namespace DataSense {
                 return;
             }
 
-            var obj = dataUtilities.propsAccessor();
+            let obj = dataUtilities.propsAccessor();
             this._instance = {
                 has(key) {
                     return obj.accessor.has(key)
@@ -788,6 +815,18 @@ namespace DataSense {
                 },
                 clearFlows(key) {
                     return obj.clearFlows(key);
+                },
+                sendPropRequest(key, type, value) {
+                    obj.sendPropRequest(key, type, value, self);
+                },
+                sendRequest(type, value) {
+                    obj.sendRequest(type, value, self);
+                },
+                sendPropBroadcast(key, data, message?) {
+                    obj.sendPropBroadcast(key, data, message);
+                },
+                sendBroadcast(data, message?) {
+                    obj.sendBroadcast(data, message);
                 },
                 eventObservable: obj.eventObservable,
                 pushDisposable(...items) {
@@ -831,9 +870,9 @@ namespace DataSense {
             thisArg?: any,
             options?: EventOptionsContract,
             disposableArray?: DisposableArrayContract
-        ): EventRegisterResultContract<T> {
+        ) {
             if (!key || typeof key !== "string") return EventObservable.createFailedOnResult(null);
-            return this._instance.eventObservable.on("ing-" + key, h, thisArg, options, disposableArray);
+            return this._instance.eventObservable.on<ChangingInfo<T>>("ing-" + key, h, thisArg, options, disposableArray);
         }
 
         public onPropChanged<T>(
@@ -842,9 +881,9 @@ namespace DataSense {
             thisArg?: any,
             options?: EventOptionsContract,
             disposableArray?: DisposableArrayContract
-        ): EventRegisterResultContract<T> {
+        ) {
             if (!key || typeof key !== "string") return EventObservable.createFailedOnResult(null);
-            return this._instance.eventObservable.on("ed-" + key, h, thisArg, options, disposableArray);
+            return this._instance.eventObservable.on<ChangedInfo<T>>("ed-" + key, h, thisArg, options, disposableArray);
         }
 
         public onPropChangeFailed<T>(
@@ -853,9 +892,9 @@ namespace DataSense {
             thisArg?: any,
             options?: EventOptionsContract,
             disposableArray?: DisposableArrayContract
-        ): EventRegisterResultContract<T> {
+        ) {
             if (!key || typeof key !== "string") return EventObservable.createFailedOnResult(null);
-            return this._instance.eventObservable.on("err-" + key, h, thisArg, options, disposableArray);
+            return this._instance.eventObservable.on<ChangedInfo<T>>("err-" + key, h, thisArg, options, disposableArray);
         }
 
         public onAnyPropChanging(
@@ -864,7 +903,7 @@ namespace DataSense {
             options?: EventOptionsContract,
             disposableArray?: DisposableArrayContract
         ) {
-            return this._instance.eventObservable.on("prop-changing", h, thisArg, options, disposableArray);
+            return this._instance.eventObservable.on<ChangingInfo<any>>("prop-changing", h, thisArg, options, disposableArray);
         }
 
         public onAnyPropChanged(
@@ -873,7 +912,7 @@ namespace DataSense {
             options?: EventOptionsContract,
             disposableArray?: DisposableArrayContract
         ) {
-            return this._instance.eventObservable.on("prop-changed", h, thisArg, options, disposableArray);
+            return this._instance.eventObservable.on<ChangedInfo<any>>("prop-changed", h, thisArg, options, disposableArray);
         }
 
         public onAnyPropChangeFailed(
@@ -882,7 +921,7 @@ namespace DataSense {
             options?: EventOptionsContract,
             disposableArray?: DisposableArrayContract
         ) {
-            return this._instance.eventObservable.on("prop-failed", h, thisArg, options, disposableArray);
+            return this._instance.eventObservable.on<ChangedInfo<any>>("prop-failed", h, thisArg, options, disposableArray);
         }
 
         public onPropsChanged(
@@ -891,7 +930,29 @@ namespace DataSense {
             options?: EventOptionsContract,
             disposableArray?: DisposableArrayContract
         ) {
-            return this._instance.eventObservable.on("batch-changed", h, thisArg, options, disposableArray);
+            return this._instance.eventObservable.on<ChangedInfoSetContract>("batch-changed", h, thisArg, options, disposableArray);
+        }
+
+        public onPropBroadcastReceived(
+            key: string,
+            h: EventHandlerContract<any> | EventHandlerContract<any>[],
+            thisArg?: any,
+            options?: EventOptionsContract,
+            disposableArray?: DisposableArrayContract
+        ) {
+            if (!key || typeof key !== "string") return EventObservable.createFailedOnResult(null);
+            return this._instance.eventObservable.on<any>("cst-" + key, h, thisArg, options, disposableArray);
+        }
+
+        public onPropNotifyReceived(
+            key: string,
+            h: EventHandlerContract<any> | EventHandlerContract<any>[],
+            thisArg?: any,
+            options?: EventOptionsContract,
+            disposableArray?: DisposableArrayContract
+        ) {
+            if (!key || typeof key !== "string") return EventObservable.createFailedOnResult(null);
+            return this._instance.eventObservable.on<any>("ntf-" + key, h, thisArg, options, disposableArray);
         }
 
         public subscribeProp<T>(key: string, h: (newValue: T) => void, thisArg?: any): SubscriberCompatibleResultContract {
@@ -903,15 +964,31 @@ namespace DataSense {
             return this._instance.eventObservable.subscribeSingle("batch-changed", h, thisArg, (changeSet: ChangedInfoSetContract) => changeSet.changes);
         }
 
+        public sendPropRequest(key: string, type: string, value: any) {
+            this._instance.sendPropRequest(key, type, value);
+        }
+
+        public sendRequest(type: string, value: any) {
+            this._instance.sendRequest(type, value);
+        }
+
+        public sendPropBroadcast(key: string, data: any, message?: FireInfoContract | string) {
+            this._instance.sendPropBroadcast(key, data, message);
+        }
+
+        public sendBroadcast(data: any, message?: FireInfoContract | string) {
+            this._instance.sendBroadcast(data, message);
+        }
+
         public createPropObservable<T>(key: string) {
-            var obj: {
+            let obj: {
                 accessor?: ValueAccessorContract<T>
             } = {};
-            var result = new ValueObservable<T>(accessor => {
+            let result = new ValueObservable<T>(accessor => {
                 obj.accessor = accessor;
             });
-            var onToken = this.onPropChanging<T>(key, (ev, evController) => {
-                var changeToken = obj.accessor.customizedSet(ev.currentValue, evController.message);
+            let onToken = this.onPropChanging<T>(key, (ev, evController) => {
+                let changeToken = obj.accessor.customizedSet(ev.currentValue, evController.message);
                 if (!ev.observable) return;
                 ev.observable.onResolved(newValue => {
                     changeToken.resolve(newValue);
@@ -937,9 +1014,11 @@ namespace DataSense {
         public readonly proxy: any;
 
         constructor(
-            modifier: (setter: (key: string, newValue: any, message?: string) => ValueResolveContract<any>) => void,
-            private _propSetter: (key: string, value: any, message?: string) => ChangedInfo<any>,
-            private _sendPropNotify: (key: string, data: any, message?: string) => void
+            modifier: (setter: (key: string, newValue: any, message?: FireInfoContract | string) => ValueResolveContract<any>) => void,
+            private _propSetter: (key: string, value: any, message?: FireInfoContract | string) => ChangedInfo<any>,
+            private _sendPropNotify: (key: string, data: any, message?: FireInfoContract | string) => void,
+            private _registerPropRequestHandler: (key: string, type: string, h: (value: any) => void) => boolean,
+            private _registerRequestHandler: (type: string, h: (value: any) => void) => boolean
         ) {
             super(acc => modifier(acc.customizedSet));
             if (typeof Proxy === "undefined") return;
@@ -965,32 +1044,42 @@ namespace DataSense {
             });
         }
 
-        public setProp(key: string, value: any, message?: string): boolean {
+        public setProp(key: string, value: any, message?: FireInfoContract | string): boolean {
             if (typeof this._propSetter !== "function") return false;
-            var info = this._propSetter(key, value, message)
+            let info = this._propSetter(key, value, message)
             return info ? info.success : false;
         }
 
-        public setPropForDetails<T>(key: string, value: T, message?: string): ChangedInfo<T> {
+        public setPropForDetails<T>(key: string, value: T, message?: FireInfoContract | string): ChangedInfo<T> {
             if (typeof this._propSetter !== "function") return ChangedInfo.fail(null, undefined, value, "not implemented");
             return this._propSetter(key, value, message);
         }
 
-        public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: string): Promise<T> {
+        public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
             return dataUtilities.setPromise((value, message?) => {
                 return this.setPropForDetails(key, value, message);
             }, value, compatible, message);
         }
 
-        public setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: string, callbackfn?: (ev: ChangedInfo<T>, message: string) => void, thisArg?: any) {
+        public setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
             return dataUtilities.setSubscribe((value, message?) => {
                 return this.setPropForDetails(key, value, message);
             }, value, message, callbackfn, thisArg);
         }
 
-        public sendPropNotify(key: string, data: any, message?: string) {
+        public sendPropNotify(key: string, data: any, message?: FireInfoContract | string) {
             if (typeof this._sendPropNotify !== "function") return;
             this._sendPropNotify(key, data, message);
+        }
+
+        public registerPropRequestHandler(key: string, type: string, h: (value: any) => void) {
+            if (typeof this._registerPropRequestHandler !== "function") return false;
+            return this._registerPropRequestHandler(key, type, h);
+        }
+
+        public registerRequestHandler(type: string, h: (value: any) => void) {
+            if (typeof this._registerRequestHandler !== "function") return false;
+            return this._registerRequestHandler(type, h);
         }
     }
 
@@ -999,10 +1088,27 @@ namespace DataSense {
 
         public readonly proxy: any;
 
+        public get formatter() {
+            return this._accessor.getFormatter();
+        }
+
+        public set formatter(h) {
+            this._accessor.setFormatter(h);
+        }
+
+        public get validator() {
+            return this._accessor.getValidator();
+        }
+
+        public set validator(h) {
+            this._accessor.setValidator(h);
+        }
+
         constructor() {
-            super(accessor => {
-                this._accessor = accessor;
-            });
+            let a: PropsAccessorContract;
+            super(acc => a = acc);
+            this._accessor = a;
+
             if (typeof Proxy === "undefined") return;
             this.proxy = new Proxy({}, {
                 has: (target, p) => {
@@ -1026,32 +1132,44 @@ namespace DataSense {
             });
         }
 
-        public setProp(key: string, value: any, message?: string) {
-            var info = this._accessor.set(key, value, message);
+        public setProp(key: string, value: any, message?: FireInfoContract | string) {
+            let info = this._accessor.set(key, value, message);
             return info ? info.success : false;
         }
 
-        public setPropForDetails<T>(key: string, value: T, message?: string): ChangedInfo<T> {
+        public setPropForDetails<T>(key: string, value: T, message?: FireInfoContract | string): ChangedInfo<T> {
             return this._accessor.set(key, value, message);
         }
 
-        public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: string): Promise<T> {
+        public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
             return dataUtilities.setPromise((value, message?) => {
                 return this.setPropForDetails(key, value, message);
             }, value, compatible, message);
         }
 
-        public setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: string, callbackfn?: (ev: ChangedInfo<T>, message: string) => void, thisArg?: any) {
+        public setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
             return dataUtilities.setSubscribe((value, message?) => {
                 return this.setPropForDetails(key, value, message);
             }, value, message, callbackfn, thisArg);
         }
 
+        public sendPropNotify(key: string, data: any, message?: FireInfoContract | string) {
+            this._accessor.sendPropNotify(key, data, message);
+        }
+
+        public registerPropRequestHandler(key: string, type: string, h: (value: any) => void) {
+            return this._accessor.registerPropRequestHandler(key, type, h);
+        }
+
+        public registerRequestHandler(type: string, h: (value: any) => void) {
+            return this._accessor.registerRequestHandler(type, h);
+        }
+
         public createPropClient<T>(key: string) {
-            var token: DisposableContract;
-            var client = new ValueClient<T>(modifier => {
+            let token: DisposableContract;
+            let client = new ValueClient<T>(modifier => {
                 token = this.onPropChanging<T>(key, (ev, evController) => {
-                    var updateToken = modifier(ev.valueRequest, evController.message);
+                    let updateToken = modifier(ev.valueRequest, evController.message);
                     if (!ev.observable) return;
                     ev.observable.onResolved(newValue => {
                         updateToken.resolve(newValue);
@@ -1062,7 +1180,7 @@ namespace DataSense {
                 });
             }, (value, message?) => {
                 return this.setPropForDetails(key, value, message);
-            }, null, (data, message?) => {
+            }, (data, message?) => {
                 this._accessor.sendPropNotify(key, data, message);
             });
             client.pushDisposable(token);
@@ -1070,10 +1188,10 @@ namespace DataSense {
         }
 
         public createClient() {
-            var token: DisposableContract;
-            var client = new PropsClient(modifier => {
+            let token: DisposableContract;
+            let client = new PropsClient(modifier => {
                 token = this.onAnyPropChanging((ev, evController) => {
-                    var updateToken = modifier(ev.key, ev.valueRequest, evController.message);
+                    let updateToken = modifier(ev.key, ev.valueRequest, evController.message);
                     if (!ev.observable) return;
                     ev.observable.onResolved(newValue => {
                         updateToken.resolve(newValue);
@@ -1084,7 +1202,7 @@ namespace DataSense {
                 });
             }, (key, value, message?) => {
                 return this.setPropForDetails(key, value, message);
-            }, this._accessor.sendPropNotify);
+            }, this._accessor.sendPropNotify, this._accessor.registerPropRequestHandler, this._accessor.registerRequestHandler);
             client.pushDisposable(token);
             return client;
         }
