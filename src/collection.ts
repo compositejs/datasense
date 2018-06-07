@@ -1,5 +1,3 @@
-namespace DataSense.Collection {
-
     export type CompareConditionContract = string | number | ((a: any, b: any) => boolean);
 
     /**
@@ -10,22 +8,22 @@ namespace DataSense.Collection {
      */
     export function findIndex(list: any[], item: any, compare?: CompareConditionContract) {
         if (!list || item == null) return -1;
-        if (!list.findIndex) list.findIndex = (callback) => {
+        let findIndex = (predicate: (value: any, index: number, obj: any[]) => boolean) => {
             let resultIndex = -1;
             list.some((ele, eleIndex, eleArr) => {
-                if (!callback(ele, eleIndex, eleArr)) return false;
+                if (!predicate(ele, eleIndex, eleArr)) return false;
                 resultIndex = eleIndex;
                 return true;
             });
             return resultIndex;
         };
-        if (!compare) return list.findIndex(ele => ele === item);
+        if (!compare) return findIndex(ele => ele === item);
         switch (typeof compare) {
             case "string":
             case "number":
-                return list.findIndex(ele => ele[compare as (string | number)] === item);
+                return findIndex(ele => ele[compare as (string | number)] === item);
             case "function":
-                return list.findIndex(ele => (compare as Function)(ele, item));
+                return findIndex(ele => (compare as Function)(ele, item));
             default:
                 return -1;
         }
@@ -48,5 +46,3 @@ namespace DataSense.Collection {
 
         return count;
     }
-
-}

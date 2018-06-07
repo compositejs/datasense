@@ -1,9 +1,16 @@
 {
     "compilerOptions": {
-        "outFile": "../dist/datasense.js",
+        "outDir": "../dist",
         "noImplicitAny": true,
-        "target": "es6",
-        "declaration": true
+        "target": "es5",
+        "declaration": true,
+        "declarationDir": "../dist",
+        "sourceMap": true,
+        "moduleResolution": "node",
+        "lib": [
+            "es2015",
+            "dom"
+        ]
     },
     "exclude": [
         "../dist",

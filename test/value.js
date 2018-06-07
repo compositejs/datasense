@@ -1,9 +1,11 @@
 var Engine = require("./engine");
-var DataSense = require("../dist/datasense.js");
+var DataSense = require("../index.js");
 let { create, assert } = Engine;
 let testCase = create("Value observable");
 
 testCase.add("Access", () => {
+console.log(DataSense);
+
     var value = new DataSense.ValueController();
 
     // We can set the value.

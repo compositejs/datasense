@@ -1,1 +1,1 @@
-module.exports = require("./dist/datasense.js");
+module.exports = require("./dist/main.js");
