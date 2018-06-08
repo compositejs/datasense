@@ -1,5 +1,4 @@
-import * as Collection from "./collection";
-
+namespace DataSense {
 export interface DisposableContract {
     dispose(): void;
 }
@@ -22,61 +21,16 @@ export interface DisposableArrayContract extends DisposableContract {
 }
 
 /**
- * Processes a handler delay or immediately.
- * @param h  The handler to process.
- * @param delay  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
- * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+ * A container for store and manage a number of disposable object.
+ * @param items  The objects to add.
  */
-export function delay(h: Function, delay: number | boolean, justPrepare?: boolean) {
-    let procToken: any;
-    let count = 0;
-    let latest: Date;
-    let procH = () => {
-        procToken = null;
-        h();
-        latest = new Date();
-        count++;
-    };
-    let proc = (maxCount?: number | boolean) => {
-        if (maxCount === true) maxCount = 1;
-        if (typeof maxCount === "number" && count >= maxCount) return;
-        if (procToken) clearTimeout(procToken);
-        if (delay == null || delay === false)
-            procH();
-        else if (delay === true)
-            procToken = setTimeout(procH, 0);
-        else if (typeof delay === "number")
-            procToken = setTimeout(procH, delay);
-    };
-    if (!justPrepare) proc();
-    return {
-        process: proc,
-        processNow() {
-            if (procToken) clearTimeout(procToken);
-            procH();
-        },
-        delay(value: number) {
-            if (arguments.length > 0) delay = value;
-            return delay;
-        },
-        pending() {
-            return !!procToken;
-        },
-        latest() {
-            return latest;
-        },
-        count() {
-            return count;
-        },
-        dispose() {
-            if (procToken) clearTimeout(procToken);
-        }
-    }
-}
-
 export class DisposableArray implements DisposableArrayContract {
     private _list: DisposableContract[] = [];
 
+    /**
+     * Adds disposable objects so that they will be disposed when this instance is disposed.
+     * @param items  The objects to add.
+     */
     public push(...items: DisposableContract[]) {
         let count = 0;
         items.forEach(item => {
@@ -87,10 +41,18 @@ export class DisposableArray implements DisposableArrayContract {
         return count;
     }
 
+    /**
+     * Adds disposable objects so that they will be disposed when this instance is disposed.
+     * @param items  The objects to add.
+     */
     public pushDisposable(...items: DisposableContract[]) {
         return this.push(...items);
     }
 
+    /**
+     * Removes the ones added here.
+     * @param items  The objects to add.
+     */
     public remove(...items: DisposableContract[]) {
         let count = 0;
         items.forEach(item => {
@@ -100,6 +62,9 @@ export class DisposableArray implements DisposableArrayContract {
         return count;
     }
 
+    /**
+     * Disposes the instance.
+     */
     public dispose() {
         this._list.forEach(item => {
             if (!item || typeof item.dispose !== "function") return;
@@ -107,4 +72,6 @@ export class DisposableArray implements DisposableArrayContract {
         });
         this._list = [];
     }
+}
+
 }

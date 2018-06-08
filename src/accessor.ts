@@ -1,23 +1,22 @@
-import * as Collection from "./collection";
-import * as CoreLib from "./core";
-import * as EventsLib from "./events";
+namespace DataSense {
 
-export type ValueModifierContract<T> = (newValue: T, message?: EventsLib.FireInfoContract | string) => ValueResolveContract<T>;
+export type ValueModifierContract<T> = (newValue: T, message?: FireInfoContract | string) => ValueResolveContract<T>;
 
 export interface ValueResolveContract<T> {
     isAborted?: boolean,
     resolve(finalValue?: T): void,
-    reject(ex?: any): void
+    reject(ex?: any): void,
+    remove?(): void
 }
 
 export interface SimpleValueAccessorContract<T> {
     get(): T;
-    set(value: T, message?: EventsLib.FireInfoContract | string): EventsLib.ChangedInfo<T> | undefined;
-    forceUpdate(message?: EventsLib.FireInfoContract | string): void;
+    set(value: T, message?: FireInfoContract | string): ChangedInfo<T> | undefined;
+    forceUpdate(message?: FireInfoContract | string): void;
 }
 
 export interface ValueAccessorContract<T> extends SimpleValueAccessorContract<T> {
-    customizedSet(valueRequested: any, message?: EventsLib.FireInfoContract | string): ValueResolveContract<T>;
+    customizedSet(valueRequested: any, message?: FireInfoContract | string): ValueResolveContract<T>;
     getFormatter(): (value: any) => T;
     setFormatter(h: (value: any) => T): void;
     getValidator(): (value: T) => boolean;
@@ -25,7 +24,7 @@ export interface ValueAccessorContract<T> extends SimpleValueAccessorContract<T>
     getStore(storePropKey: string): any;
     setStore(storePropKey: string, value: any): void;
     removeStore(...storePropKey: string[]): void;
-    sendNotify(data: any, message?: EventsLib.FireInfoContract | string): void;
+    sendNotify(data: any, message?: FireInfoContract | string): void;
 }
 
 export interface RegisterRequestContract<T> {
@@ -37,15 +36,15 @@ export type PropUpdateActionContract<T> = ({ action: "delete", key: string | str
 export interface SimplePropsAccessorContract {
     hasProp(key: string): boolean;
     getProp(key: string): any;
-    setProp(key: string, value: any, message?: EventsLib.FireInfoContract | string): EventsLib.ChangedInfo<any>;
-    removeProp(keys: string | string[], message?: EventsLib.FireInfoContract | string): number;
-    batchProp(changeSet: any | PropUpdateActionContract<any>[], message?: EventsLib.FireInfoContract | string): void;
-    forceUpdateProp(key: string, message?: EventsLib.FireInfoContract | string): void;
+    setProp(key: string, value: any, message?: FireInfoContract | string): ChangedInfo<any>;
+    removeProp(keys: string | string[], message?: FireInfoContract | string): number;
+    batchProp(changeSet: any | PropUpdateActionContract<any>[], message?: FireInfoContract | string): void;
+    forceUpdateProp(key: string, message?: FireInfoContract | string): void;
     getPropKeys(): string[],
 }
 
 export interface PropsAccessorContract extends SimplePropsAccessorContract {
-    customizedSetProp(key: string, valueRequested: any, message?: EventsLib.FireInfoContract | string): ValueResolveContract<any>;
+    customizedSetProp(key: string, valueRequested: any, message?: FireInfoContract | string): ValueResolveContract<any>;
     getFormatter(): (key: string, value: any) => any;
     setFormatter(h: (key: string, value: any) => any): void;
     getValidator(): (key: string, value: any) => boolean;
@@ -53,21 +52,25 @@ export interface PropsAccessorContract extends SimplePropsAccessorContract {
     getPropStore(key: string, storePropKey: string): any;
     setPropStore(key: string, storePropKey: string, value: any): void;
     removePropStore(key: string, ...storePropKey: string[]): void;
-    sendPropNotify(key: string, data: any, message?: EventsLib.FireInfoContract | string): void;
-    sendNotify(data: any, message?: EventsLib.FireInfoContract | string): void;
+    sendPropNotify(key: string, data: any, message?: FireInfoContract | string): void;
+    sendNotify(data: any, message?: FireInfoContract | string): void;
 }
 
 export interface RegisterPropRequestContract<TProps, TValue> extends RegisterRequestContract<TProps> {
     registerPropRequestHandler(key: string, type: string, h: (owner: TValue, value: any) => void): boolean;
 }
 
-export interface ChangeFlowRegisteredContract extends CoreLib.DisposableContract {
+export interface ChangeFlowRegisteredContract extends DisposableContract {
     registeredDate: Date;
     count: number;
-    sync(message?: EventsLib.FireInfoContract | string): void;
+    sync(message?: FireInfoContract | string): void;
 }
 
-export function setPromise<T>(setter: (value: T, message?: EventsLib.FireInfoContract | string) => EventsLib.ChangedInfo<T>, value: Promise<T>, compatible?: boolean, message?: EventsLib.FireInfoContract | string): Promise<T> {
+}
+
+namespace DataSense.Access {
+
+export function setPromise<T>(setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>, value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
     if (value === undefined) return Promise.reject("value is undefined");
     if (typeof value.then !== "function") {
         if (!compatible) return Promise.reject("value is not a Promise object");
@@ -80,8 +83,8 @@ export function setPromise<T>(setter: (value: T, message?: EventsLib.FireInfoCon
         return r;
     });
 }
-    
-export function setSubscribe<T>(setter: (value: T, message?: EventsLib.FireInfoContract | string) => EventsLib.ChangedInfo<T>, value: CoreLib.SubscriberContract<T>, message?: EventsLib.FireInfoContract | string, callbackfn?: (ev: EventsLib.ChangedInfo<T>, message: EventsLib.FireInfoContract) => void, thisArg?: any) {
+
+export function setSubscribe<T>(setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>, value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
     let needCallback = typeof callbackfn === "function";
     return value.subscribe(newValue => {
         let result = setter(newValue, message);
@@ -97,22 +100,22 @@ export function propsAccessor(): {
     clearFlows(key: string): number,
     sendPropRequest(key: string, type: string, data: any, owner: any): void,
     sendRequest(type: string, data: any, owner: any): void,
-    sendPropBroadcast(key: string, data: any, message?: EventsLib.FireInfoContract | string): void,
-    sendBroadcast(data: any, message?: EventsLib.FireInfoContract | string): void,
-    propChanging: EventsLib.EventObservable,
-    propChanged: EventsLib.EventObservable,
-    propChangeFailed: EventsLib.EventObservable,
-    propNotifyReceived: EventsLib.EventObservable,
-    propBroadcastReceived: EventsLib.EventObservable,
-    notifyReceived: EventsLib.SingleEventObservable<any>,
-    broadcastReceived: EventsLib.SingleEventObservable<any>,
-    anyPropChanging: EventsLib.SingleEventObservable<EventsLib.ChangingInfo<any>>,
-    anyPropChanged: EventsLib.SingleEventObservable<EventsLib.ChangedInfo<any>>,
-    anyPropChangeFailed: EventsLib.SingleEventObservable<EventsLib.ChangedInfo<any>>,
-    propsChanged: EventsLib.SingleEventObservable<EventsLib.ChangedInfoSetContract>
+    sendPropBroadcast(key: string, data: any, message?: FireInfoContract | string): void,
+    sendBroadcast(data: any, message?: FireInfoContract | string): void,
+    propChanging: EventObservable,
+    propChanged: EventObservable,
+    propChangeFailed: EventObservable,
+    propNotifyReceived: EventObservable,
+    propBroadcastReceived: EventObservable,
+    notifyReceived: SingleEventObservable<any>,
+    broadcastReceived: SingleEventObservable<any>,
+    anyPropChanging: SingleEventObservable<ChangingInfo<any>>,
+    anyPropChanged: SingleEventObservable<ChangedInfo<any>>,
+    anyPropChangeFailed: SingleEventObservable<ChangedInfo<any>>,
+    propsChanged: SingleEventObservable<ChangedInfoSetContract>
 } {
     let store: any = {};
-    let eventManager = new EventsLib.EventController();
+    let eventManager = new EventController();
     let hasProp = (key: string) => {
         return (store as Object).hasOwnProperty(key) && (store[key] as Object).hasOwnProperty("value");
     };
@@ -142,16 +145,16 @@ export function propsAccessor(): {
     let validator: ((key: string, value: any) => boolean);
     let actionRequests: any = {};
 
-    let setProp = (key: string, value: any, message: EventsLib.FireInfoContract | string, init?: boolean, getResp?: boolean): EventsLib.ChangedInfo<any> => {
+    let setProp = (key: string, value: any, message: FireInfoContract | string, init?: boolean, getResp?: boolean): ChangedInfo<any> => {
         let prop = getProp(key, true);
-        if (!prop) return getResp ? new EventsLib.ChangedInfo(null, "invalid", false, undefined, undefined, value, "key is not valid") : undefined;
-        if (init && (prop as Object).hasOwnProperty("value")) return getResp ? EventsLib.ChangedInfo.fail(key, prop.value, value, "ignore") : undefined;
+        if (!prop) return getResp ? new ChangedInfo(null, "invalid", false, undefined, undefined, value, "key is not valid") : undefined;
+        if (init && (prop as Object).hasOwnProperty("value")) return getResp ? ChangedInfo.fail(key, prop.value, value, "ignore") : undefined;
         if (prop.updating) {
-            if (!prop.updating.custom && prop.updating.value === value) return getResp ? EventsLib.ChangedInfo.fail(key, prop.value, value, "duplicated") : undefined;
+            if (!prop.updating.custom && prop.updating.value === value) return getResp ? ChangedInfo.fail(key, prop.value, value, "duplicated") : undefined;
             prop.updating.cancel("duplicated");
         }
 
-        let onceC = new EventsLib.OnceController();
+        let onceC = new OnceController();
         let setToken = prop.updating = {
             value,
             cancel(err) {
@@ -160,8 +163,8 @@ export function propsAccessor(): {
         };
         let propExist = hasProp(key);
         let oldValue = prop.value;
-        eventManager.fire("ing-" + key, new EventsLib.ChangingInfo(key, oldValue, value, onceC.createObservable()));
-        eventManager.fire("prop-changing", new EventsLib.ChangingInfo(key, oldValue, value, onceC.createObservable()));
+        eventManager.fire("ing-" + key, new ChangingInfo(key, oldValue, value, onceC.createObservable()));
+        eventManager.fire("prop-changing", new ChangingInfo(key, oldValue, value, onceC.createObservable()));
         let flowTokens = prop.flows.map(item => {
             if (typeof item !== "function") return undefined;
             return item(value, message);
@@ -169,8 +172,12 @@ export function propsAccessor(): {
         let valueRequested = value;
         if (typeof formatter === "function") value = formatter(key, value);
         if (typeof validator === "function" && !validator(key, value)) {
-            if (setToken !== prop.updating) return getResp ? EventsLib.ChangedInfo.fail(key, prop.value, value, "expired") : undefined;
-            let errorInfo = EventsLib.ChangedInfo.fail(key, oldValue, value, "invalid");
+            if (setToken !== prop.updating) {
+                onceC.reject("expired");
+                return getResp ? ChangedInfo.fail(key, prop.value, value, "expired") : undefined;
+            }
+
+            let errorInfo = ChangedInfo.fail(key, oldValue, value, "invalid");
             onceC.reject("invalid");
             eventManager.fire("err-" + key, errorInfo);
             eventManager.fire("prop-failed", errorInfo);
@@ -181,12 +188,16 @@ export function propsAccessor(): {
             return errorInfo;
         }
 
-        if (setToken !== prop.updating) return getResp ? EventsLib.ChangedInfo.fail(key, prop.value, value, "expired") : undefined;
+        if (setToken !== prop.updating) {
+            onceC.reject("expired");
+            return getResp ? ChangedInfo.fail(key, prop.value, value, "expired") : undefined;
+        }
+
         prop.updating = null;
-        onceC.resolve(value);
-        if (oldValue === value) return EventsLib.ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
         prop.value = value;
-        let info = EventsLib.ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
+        onceC.resolve(value);
+        if (oldValue === value) return ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
+        let info = ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
         eventManager.fire("ed-" + key, info);
         eventManager.fire("prop-changed", info);
         flowTokens.forEach(item => {
@@ -195,26 +206,38 @@ export function propsAccessor(): {
         });
         return info;
     };
-    let removeProp = (keys: string | string[], message: EventsLib.FireInfoContract | string) => {
+    let removeProp = (keys: string | string[], message: FireInfoContract | string) => {
         if (!keys) return [];
         if (typeof keys === "string") keys = [keys];
         if (!(keys instanceof Array)) return [];
-        let result: EventsLib.ChangedInfo<any>[] = [];
+        let result: ChangedInfo<any>[] = [];
         keys.forEach(key => {
             let prop = getProp(key, false);
             if (!prop) return;
             let propExist = hasProp(key);
             if (!propExist) return;
             let oldValue = prop.value;
-            let onceC = new EventsLib.OnceController();
-            eventManager.fire("ing-" + key, new EventsLib.ChangingInfo(key, oldValue, undefined, onceC.createObservable()));
-            eventManager.fire("prop-changing", new EventsLib.ChangingInfo(key, oldValue, undefined, onceC.createObservable()));
+            let onceC = new OnceController();
+            let setToken = prop.updating = {
+                value: undefined as any,
+                cancel(err) {
+                    onceC.reject(err);
+                }
+            };
+            eventManager.fire("ing-" + key, new ChangingInfo(key, oldValue, undefined, onceC.createObservable()));
+            eventManager.fire("prop-changing", new ChangingInfo(key, oldValue, undefined, onceC.createObservable()));
             let flowTokens = prop.flows.map(item => {
                 if (typeof item !== "function") return undefined;
                 return item(undefined, message);
             });
+            if (setToken !== prop.updating) {
+                onceC.reject("expired");
+                return ChangedInfo.fail(key, prop.value, undefined, "expired");
+            }
+
+            prop.updating = null;
             delete prop.value;
-            let info = EventsLib.ChangedInfo.success(key, undefined, oldValue);
+            let info = ChangedInfo.success(key, undefined, oldValue);
             result.push(info);
             onceC.resolve(undefined);
             if (oldValue === undefined) return;
@@ -222,7 +245,8 @@ export function propsAccessor(): {
             eventManager.fire("prop-changed", info);
             flowTokens.forEach(item => {
                 if (!item || typeof item.resolve !== "function") return;
-                item.resolve(undefined);
+                if (typeof item.remove === "function") item.remove();
+                else item.resolve(undefined);
             });
         });
         return result;
@@ -261,7 +285,7 @@ export function propsAccessor(): {
             let propExist = hasProp(key);
             let oldValue = prop.value;
             let obj: ValueResolveContract<any>;
-            let onceC = new EventsLib.OnceController();
+            let onceC = new OnceController();
             let setToken = prop.updating = {
                 value: valueRequested,
                 custom: true,
@@ -270,8 +294,8 @@ export function propsAccessor(): {
                     onceC.reject(err);
                 }
             };
-            eventManager.fire("ing-" + key, new EventsLib.ChangingInfo(key, oldValue, valueRequested, onceC.createObservable()));
-            eventManager.fire("prop-changing", new EventsLib.ChangingInfo(key, oldValue, valueRequested, onceC.createObservable()));
+            eventManager.fire("ing-" + key, new ChangingInfo(key, oldValue, valueRequested, onceC.createObservable()));
+            eventManager.fire("prop-changing", new ChangingInfo(key, oldValue, valueRequested, onceC.createObservable()));
             flowTokens = prop.flows.map(item => {
                 if (typeof item !== "function") return undefined;
                 return item(valueRequested, message);
@@ -282,9 +306,9 @@ export function propsAccessor(): {
                     if (setToken !== prop.updating) return;
                     prop.updating = null;
                     onceC.resolve(finalValue);
-                    if (oldValue === finalValue) return EventsLib.ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
+                    if (oldValue === finalValue) return ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
                     prop.value = finalValue;
-                    let info = EventsLib.ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
+                    let info = ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
                     eventManager.fire("ed-" + key, info);
                     eventManager.fire("prop-changed", info);
                     flowTokens.forEach(item => {
@@ -298,7 +322,7 @@ export function propsAccessor(): {
                     if (setToken !== prop.updating) return;
                     prop.updating = null;
                     obj.isAborted = true;
-                    let errorInfo = EventsLib.ChangedInfo.fail(key, oldValue, valueRequested, "invalid");
+                    let errorInfo = ChangedInfo.fail(key, oldValue, valueRequested, "invalid");
                     onceC.reject("invalid");
                     eventManager.fire("err-" + key, errorInfo);
                     eventManager.fire("prop-failed", errorInfo);
@@ -306,6 +330,23 @@ export function propsAccessor(): {
                         if (!item || typeof item.reject !== "function") return;
                         item.reject("invalid");
                     });
+                },
+                remove() {
+                    if (done) return;
+                    if (setToken !== prop.updating) return;
+                    prop.updating = null;
+                    if (!propExist) return;
+                    onceC.resolve(undefined);
+                    if (oldValue === undefined) return ChangedInfo.success(key, undefined, oldValue, "remove", valueRequested);
+                    delete prop.value;
+                    let info = ChangedInfo.success(key, undefined, oldValue, "remove", valueRequested);
+                    eventManager.fire("ed-" + key, info);
+                    eventManager.fire("prop-changed", info);
+                    flowTokens.forEach(item => {
+                        if (!item || typeof item.resolve !== "function") return;
+                        item.resolve(undefined);
+                    });
+                    return info;
                 }
             };
             return obj;
@@ -317,9 +358,9 @@ export function propsAccessor(): {
         },
         batchProp(changeSet, message?) {
             if (!changeSet) return;
-            let changed: EventsLib.ChangedInfo<any>[] = [];
-            let pushChanged = (...actionResult: EventsLib.ChangedInfo<any>[]) => {
-                EventsLib.ChangedInfo.push(changed, ...actionResult);
+            let changed: ChangedInfo<any>[] = [];
+            let pushChanged = (...actionResult: ChangedInfo<any>[]) => {
+                ChangedInfo.push(changed, ...actionResult);
             };
             var batchPropChanged = (changeSet: any) => {
                 if (changeSet) for (let key in changeSet) {
@@ -335,7 +376,7 @@ export function propsAccessor(): {
 
             changeSet.forEach(action => {
                 if (!action || !action.action) return;
-                let actionResult: EventsLib.ChangedInfo<any>[];
+                let actionResult: ChangedInfo<any>[];
                 switch (action.action) {
                     case "delete":
                         pushChanged(...removeProp(action.key, message));
@@ -354,19 +395,19 @@ export function propsAccessor(): {
 
             if (changed.length) eventManager.fire("batch-changed", { changed });
         },
-        forceUpdateProp(key: string, message?: EventsLib.FireInfoContract | string) {
+        forceUpdateProp(key: string, message?: FireInfoContract | string) {
             var propInfo = getProp(key, false);
             if (!propInfo) return;
-            let onceC = new EventsLib.OnceController();
-            eventManager.fire("ing-" + key, new EventsLib.ChangingInfo(key, propInfo.value, propInfo.value, onceC.createObservable()), message);
-            eventManager.fire("prop-changing", new EventsLib.ChangingInfo(key, propInfo.value, propInfo.value, onceC.createObservable()), message);
+            let onceC = new OnceController();
+            eventManager.fire("ing-" + key, new ChangingInfo(key, propInfo.value, propInfo.value, onceC.createObservable()), message);
+            eventManager.fire("prop-changing", new ChangingInfo(key, propInfo.value, propInfo.value, onceC.createObservable()), message);
             onceC.resolve(propInfo.value);
-            let info = EventsLib.ChangedInfo.success(key, propInfo.value, propInfo.value);
+            let info = ChangedInfo.success(key, propInfo.value, propInfo.value);
             eventManager.fire("ed-" + key, info, message);
             eventManager.fire("prop-changed", info, message);
         },
         getPropKeys() {
-            return Object.keys(store);
+            return Object.keys(store).filter(key => !!store[key] && (store[key] as Object).hasOwnProperty("value"));
         },
         getFormatter() {
             return formatter;
@@ -422,7 +463,7 @@ export function propsAccessor(): {
             return {
                 registeredDate: now,
                 count,
-                sync(message?: EventsLib.FireInfoContract | string) {
+                sync(message?: FireInfoContract | string) {
                     flows.forEach(item => {
                         let currentValue = changerClient.getProp(key);
                         let token = item(currentValue, message);
@@ -471,4 +512,6 @@ export function propsAccessor(): {
         anyPropChangeFailed: eventManager.createSingleObservable("prop-failed"),
         propsChanged: eventManager.createSingleObservable("batch-changed")
     }
+}
+
 }

@@ -1,9 +1,4 @@
-import * as Collection from "./collection";
-import * as CoreLib from "./core";
-
-let inner = {
-    eventPrefix: "ev-"
-};
+namespace DataSense {
 
 export type ChangeActionContract = "add" | "remove" | "update" | "delta" | "none" | "invalid" | "unknown";
 
@@ -42,7 +37,7 @@ export interface EventOptionsContract {
     arg?: any;
 }
 
-export interface EventHandlerControllerContract extends CoreLib.DisposableContract {
+export interface EventHandlerControllerContract extends DisposableContract {
     readonly key: string;
     readonly count: number;
     readonly fireDate: Date;
@@ -53,30 +48,37 @@ export interface EventHandlerControllerContract extends CoreLib.DisposableContra
     readonly additional: any;
 }
 
-export interface EventRegisterResultContract<T> extends CoreLib.DisposableContract {
+export interface EventRegisterResultContract<T> extends DisposableContract {
     readonly key: string,
     readonly count: number,
     readonly registerDate: Date,
     fire(ev: T, message?: FireInfoContract | string): void
 }
 
-export interface AnyEventRegisterResultContract extends CoreLib.DisposableContract {
+export interface AnyEventRegisterResultContract extends DisposableContract {
     readonly count: number,
     readonly registerDate: Date,
     fire(key: string, ev: any, message?: FireInfoContract | string): void
 }
 
-export class EventObservable implements CoreLib.DisposableArrayContract {
+/**
+ * Event observable.
+ */
+export class EventObservable implements DisposableArrayContract {
     private readonly _instance: {
         push(key: string, obj: any): number,
         remove(key: string, obj?: any): number,
         fire(key: string, ev: any, message?: FireInfoContract | string, obj?: any): void
-    } & CoreLib.DisposableArrayContract;
+    } & DisposableArrayContract;
 
     public readonly hasKeyMap: boolean;
 
+    /**
+     * Initializes a new instance of the EventObservable class.
+     * @param firer  The handler to fire.
+     */
     public constructor(firer: EventObservable | ((fire: (key: string, ev: any, message?: FireInfoContract | string) => void) => void), mapKey?: string | ((key: string) => string)) {
-        let disposable = new CoreLib.DisposableArray();
+        let disposable = new DisposableArray();
         let getKey = (key: string) => {
             if (!mapKey || !key || typeof key !== "string") return key;
             if (typeof mapKey === "function") return mapKey(key);
@@ -108,6 +110,7 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
                     disposable.dispose();
                 }
             };
+            firer.pushDisposable(this);
             return;
         }
 
@@ -123,7 +126,6 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
             }
 
             if (typeof key !== "string" || !key) return 0;
-            key = inner.eventPrefix + key;
             if (obj) return Collection.remove(store[key], obj);
             if (!store[key]) return 0;
             let count = store[key].length;
@@ -139,7 +141,7 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
             time: Date,
             latestFireDate: Date,
             count: number
-        }, ev: any, message: FireInfoContract | string, further: boolean) => {
+        }, ev: any, message: FireInfoContract | string, removing: KeyValueContract<any>[], further: boolean) => {
             if (obj.isInvalid) return;
             let isInvalid = false;
             if (obj.options.invalid) {
@@ -154,15 +156,14 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
 
             if (isInvalid) {
                 obj.isInvalid = true;
-                setTimeout(() => {
-                    remove(!further ? key : null, obj);
-                }, 0);
+                removing.push({ key: !further ? key : null, value: obj });
                 if (!obj.options.invalidForNextTime) return;
             }
 
             if (obj.count < Number.MAX_SAFE_INTEGER) obj.count++;
             let fireObj = typeof message === "string" ? { message } : (message || {});
-            CoreLib.delay(() => {
+            let working = true;
+            HitTask.debounce(() => {
                 obj.h.forEach(h => {
                     if (typeof h !== "function") return;
                     h.call(obj.thisArg, ev, {
@@ -194,11 +195,13 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
                             return fireObj.data;
                         },
                         dispose() {
-                            remove(key, obj);
+                            if (working) removing.push({ key: !further ? key : null, value: obj });
+                            else remove(key, obj);
                         }
                     } as EventHandlerControllerContract);
                 });
             }, obj.options.delay);
+            working = false;
         };
 
         this._instance = {
@@ -206,7 +209,6 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
                 if (!obj) return 0;
                 if (key === null) return furtherHandlers.push(obj);
                 if (typeof key !== "string" || !key) return 0;
-                key = inner.eventPrefix + key;
                 if (!store[key]) store[key] = [];
                 return (store[key] as any[]).push(obj);
             },
@@ -215,28 +217,46 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
             },
             fire(key, ev, message, obj) {
                 if (typeof key !== "string" || !key) return;
-                key = inner.eventPrefix + key;
                 if (!store[key]) return;
+                let removing: KeyValueContract<any>[] = [];
+                let removingToken = setTimeout(() => {
+                    removing.forEach(removingItem => {
+                        remove(removingItem.key, removingItem.value);
+                    })
+                }, 0);
+                let removingH = () => {
+                    clearTimeout(removingToken);
+                    removing.forEach(removingItem => {
+                        remove(removingItem.key, removingItem.value);
+                    })
+                };
                 if (obj) {
                     if ((store[key] as any[]).indexOf(obj) < 0) {
-                        if (furtherHandlers.indexOf(obj) < 0) return;
+                        if (furtherHandlers.indexOf(obj) < 0) {
+                            clearTimeout(removingToken);
+                            return;
+                        }
+
                         obj.latestFireDate = new Date();
-                        process(key, obj, ev, message, true);
+                        process(key, obj, ev, message, removing, true);
+                        removingH();
                         return;
                     }
 
                     obj.latestFireDate = new Date();
-                    process(key, obj, ev, message, false);
+                    process(key, obj, ev, message, removing, false);
                 } else {
                     (store[key] as any[]).forEach(item => {
                         item.latestFireDate = new Date();
-                        process(key, item, ev, message, false);
+                        process(key, item, ev, message, removing, false);
                     });
                     furtherHandlers.forEach(item => {
                         item.latestFireDate = new Date();
-                        process(key, item, ev, message, true);
+                        process(key, item, ev, message, removing, true);
                     });
                 }
+
+                removingH();
             },
             pushDisposable(...items) {
                 return disposable.pushDisposable(...items);
@@ -253,7 +273,7 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
         });
     }
 
-    public pushDisposable(...items: CoreLib.DisposableContract[]) {
+    public pushDisposable(...items: DisposableContract[]) {
         return this._instance.pushDisposable(...items);
     }
 
@@ -262,7 +282,7 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
         h: EventHandlerContract<T> | EventHandlerContract<T>[],
         thisArg?: any,
         options?: EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        disposableArray?: DisposableArrayContract
     ): EventRegisterResultContract<T> {
         if (!h) h = [];
         if (!(h instanceof Array)) h = [h];
@@ -285,7 +305,8 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
 
         if (!options) options = {};
         let obj = { h, thisArg, options, time: new Date(), count: 0 };
-        this._instance.push(key, obj);
+        let implInstance = this._instance;
+        implInstance.push(key, obj);
         let result: EventRegisterResultContract<T> = {
             get key() {
                 return key;
@@ -297,13 +318,13 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
                 return obj.time;
             },
             fire(ev: T, message?: FireInfoContract | string) {
-                this._instance.fire(key, ev, obj, message);
+                implInstance.fire(key, ev, message);
             },
             dispose() {
-                this._instance.remove(key, obj);
+                implInstance.remove(key, obj);
             }
         };
-        this._instance.pushDisposable(result);
+        implInstance.pushDisposable(result);
         if (disposableArray) disposableArray.pushDisposable(result);
         return result;
     }
@@ -317,15 +338,16 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
     }
 
     public onAny(
-        h: EventHandlerContract<CoreLib.KeyValueContract<any>> | EventHandlerContract<CoreLib.KeyValueContract<any>>[],
+        h: EventHandlerContract<KeyValueContract<any>> | EventHandlerContract<KeyValueContract<any>>[],
         thisArg?: any,
         options?: EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract): AnyEventRegisterResultContract {
+        disposableArray?: DisposableArrayContract): AnyEventRegisterResultContract {
         if (!h) h = [];
         if (!(h instanceof Array)) h = [h];
         if (!options) options = {};
         let obj = { h, thisArg, options, time: new Date(), count: 0 };
-        this._instance.push(null, obj);
+        let implInstance = this._instance;
+        implInstance.push(null, obj);
         let result: AnyEventRegisterResultContract = {
             get count() {
                 return obj.count;
@@ -334,13 +356,13 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
                 return obj.time;
             },
             fire(key: string, ev: any, message?: FireInfoContract | string) {
-                this._instance.fire(key, ev, obj, message);
+                implInstance.fire(key, ev, message);
             },
             dispose() {
-                this._instance.remove(null, obj);
+                implInstance.remove(null, obj);
             }
         };
-        this._instance.pushDisposable(result);
+        implInstance.pushDisposable(result);
         if (disposableArray) disposableArray.pushDisposable(result);
         return result;
     }
@@ -354,9 +376,9 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
     }
 
     public subscribeAny(
-        h: (newValue: CoreLib.KeyValueContract<any>) => void,
+        h: (newValue: KeyValueContract<any>) => void,
         thisArg?: any
-    ): CoreLib.SubscriberCompatibleResultContract {
+    ): SubscriberCompatibleResultContract {
         let result: any;
         if (typeof h !== "function") {
             result = function () {};
@@ -380,7 +402,7 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
         h: (newValue: T) => void,
         thisArg?: any,
         convertor?: (newValue: any) => T
-    ): CoreLib.SubscriberCompatibleResultContract {
+    ): SubscriberCompatibleResultContract {
         let result: any;
         if (typeof h !== "function") {
             result = function () {};
@@ -428,36 +450,54 @@ export class EventObservable implements CoreLib.DisposableArrayContract {
         };
     }
 
-    public static createNothingSubscribe(): CoreLib.SubscriberCompatibleResultContract {
+    public static createNothingSubscribe(): SubscriberCompatibleResultContract {
         let result: any = function () {};
         result.dispose = function () {};
         return result;
     }
 }
 
-export class SingleEventObservable<T> implements CoreLib.DisposableArrayContract {
-    private _disposable = new CoreLib.DisposableArray();
+export class SingleEventObservable<T> implements DisposableArrayContract {
+    private _disposable = new DisposableArray();
     private _eventObservable: EventObservable;
 
+    /**
+     * Initializes a new instance of the SingleEventObservable class.
+     * @param eventObservable  The event observable.
+     * @param key  The event key.
+     */
     constructor(eventObservable: EventObservable, public readonly key: string) {
         this._eventObservable = eventObservable && eventObservable instanceof EventObservable ? eventObservable : new EventObservable(null);
+        eventObservable.pushDisposable(this);
     }
 
-    public pushDisposable(...items: CoreLib.DisposableContract[]) {
+    public pushDisposable(...items: DisposableContract[]) {
         return this._disposable.pushDisposable(...items);
     }
 
+    /**
+     * Adds event listener.
+     * @param h  The handler.
+     * @param thisArg  this argument for calling handler.
+     * @param options  The options to control how the handler processes.
+     * @param disposabelArray  The disposable array used to push the listener result.
+     */
     public on(
         h: EventHandlerContract<T> | EventHandlerContract<T>[],
         thisArg?: any,
         options?: EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        disposableArray?: DisposableArrayContract
     ): EventRegisterResultContract<T> {
         let result = this._eventObservable.on(this.key, h, thisArg, options, disposableArray);
         this._disposable.push(result);
         return result;
     }
 
+    /**
+     * Adds event listener for one time raised.
+     * @param h  The handler.
+     * @param thisArg  this argument for calling handler.
+     */
     public once<T>(
         h: EventHandlerContract<any> | EventHandlerContract<any>[],
         thisArg?: any
@@ -467,13 +507,13 @@ export class SingleEventObservable<T> implements CoreLib.DisposableArrayContract
         return result;
     }
 
-    public subscribe(h: (newValue: T) => void, thisArg?: any): CoreLib.SubscriberCompatibleResultContract {
+    public subscribe(h: (newValue: T) => void, thisArg?: any): SubscriberCompatibleResultContract {
         let result = this._eventObservable.subscribeSingle<T>(this.key, h, thisArg);
         this._disposable.push(result);
         return result;
     }
 
-    public subscribeWithConvertor<TValue>(h: (newValue: TValue) => void, thisArg?: any, convertor?: (newValue: T) => TValue): CoreLib.SubscriberCompatibleResultContract {
+    public subscribeWithConvertor<TValue>(h: (newValue: TValue) => void, thisArg?: any, convertor?: (newValue: T) => TValue): SubscriberCompatibleResultContract {
         let result = this._eventObservable.subscribeSingle<TValue>(this.key, h, thisArg, convertor);
         this._disposable.push(result);
         return result;
@@ -483,11 +523,17 @@ export class SingleEventObservable<T> implements CoreLib.DisposableArrayContract
         return new SingleEventObservable<T>(this._eventObservable, this.key);
     }
 
+    /**
+     * Disposes the instance.
+     */
     public dispose() {
         this._disposable.dispose();
     }
 }
 
+/**
+ * Event observable and controller.
+ */
 export class EventController extends EventObservable {
     private _fireHandler: (key: string, ev: any, message?: FireInfoContract | string) => void;
 
@@ -499,13 +545,23 @@ export class EventController extends EventObservable {
         this._fireHandler = f;
     }
 
+    /**
+     * Raises a specific event wth arugment.
+     * @param key  The event key.
+     * @param ev  The event argument.
+     * @param message  The additional information.
+     * @param delay  A span in millisecond to delay this raising.
+     */
     fire(key: string, ev: any, message?: FireInfoContract | string, delay?: number | boolean): void {
-        CoreLib.delay(() => {
+        HitTask.debounce(() => {
             this._fireHandler(key, ev, message);
         }, delay);
     }
 }
 
+/**
+ * The observable for resolving data.
+ */
 export class OnceObservable<T> {
     private _result: {
         success?: boolean,
@@ -518,12 +574,12 @@ export class OnceObservable<T> {
 
     constructor(executor: OnceObservable<T> | ((resolve: (value: T) => void, reject: (ex: any) => void) => void)) {
         if (executor instanceof OnceObservable) {
-            this._result = { ...executor._result };
+            this._result = executor._result;
             return;
         }
 
         if (typeof executor !== "function") return;
-        let resolveH: any, rejectH: any;
+        let resolveH: Function, rejectH: Function;
         this.promise = new Promise<T>((resolve, reject) => {
             resolveH = resolve;
             rejectH = reject;
@@ -540,12 +596,13 @@ export class OnceObservable<T> {
                 this._result.success = false;
                 list = this._result.rejected;
             }
+
             delete this._result.resolved;
             delete this._result.rejected;
             if (!list) return;
             list.forEach(item => {
-                CoreLib.delay(() => {
-                    item.h.call(value);
+                HitTask.debounce(() => {
+                    item.h.call(item.thisArg, value);
                 }, item.delay);
             });
         };
@@ -582,7 +639,7 @@ export class OnceObservable<T> {
     }
 
     public onResolvedLater(h: (value: T) => void, thisArg?: any, delay?: boolean | number) {
-        CoreLib.delay(() => {
+        HitTask.debounce(() => {
             this.onResolved(h, thisArg, delay);
         }, true);
     }
@@ -599,7 +656,7 @@ export class OnceObservable<T> {
     }
 
     public onRejectedLater(h: (value: T) => void, thisArg?: any, delay?: boolean | number) {
-        CoreLib.delay(() => {
+        HitTask.debounce(() => {
             this.onRejected(h, thisArg, delay);
         }, true);
     }
@@ -613,6 +670,9 @@ export class OnceObservable<T> {
     }
 }
 
+/**
+ * The observable and controller for resolving data.
+ */
 export class OnceController<T> extends OnceObservable<T> {
     private _instance: {
         resolve(value: T): void,
@@ -633,15 +693,26 @@ export class OnceController<T> extends OnceObservable<T> {
         this._instance = a;
     }
 
+    /**
+     * Sets the result data.
+     * @param value  The data value.
+     */
     resolve(value: T) {
         this._instance.resolve(value);
     }
 
+    /**
+     * Sets the error information.
+     * @param err  The exception or error information data.
+     */
     reject(err: any) {
         this._instance.reject(err);
     }
 }
 
+/**
+ * The information for data changing.
+ */
 export class ChangingInfo<T> {
     constructor(
         public readonly key: string,
@@ -654,6 +725,9 @@ export class ChangingInfo<T> {
     }
 }
 
+/**
+ * The information for data changed.
+ */
 export class ChangedInfo<T> {
     constructor(
         public readonly key: string,
@@ -700,4 +774,6 @@ export class ChangedInfo<T> {
             else list.push(item);
         });
     }
+}
+
 }

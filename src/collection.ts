@@ -1,3 +1,5 @@
+namespace DataSense.Collection {
+
     export type CompareConditionContract = string | number | ((a: any, b: any) => boolean);
 
     /**
@@ -46,3 +48,4 @@
 
         return count;
     }
+}

@@ -1,6 +1,8 @@
+let assertCount = 0;
+
 function create(name) {
-    var list = [];
-    var client = {
+    let list = [];
+    let client = {
         name() {
             return name;
         },
@@ -9,30 +11,95 @@ function create(name) {
             list.push({ name, h });
         },
         run() {
-            console.info("RUN - " + name + " (" + list.length + ")")
-            list.forEach(item => {
+            let now = new Date();
+            let succ = 0;
+            let fail = 0;
+            console.info("-----------------");
+            console.info(name);
+            console.info("RUN (" + list.length + " test cases)");
+            list.forEach((item, index) => {
                 try {
+                    assertCount = 0;
                     item.h();
-                    console.info("PASS - " + item.name);
+                    if (assertCount > 0) {
+                        succ++;
+                        console.info((index + 1).toString() + " [pass] " + item.name);
+                    } else {
+                        console.info((index + 1).toString() + " [ignore] " + item.name);
+                    }
                 } catch (ex) {
-                    console.error("FAIL - " + item.name, ex);
+                    console.error((index + 1).toString() + " [fail] " + item.name);
+                    if (ex) console.error(" Error", ex);
+                    fail++;
                 }
             });
+            console.info("FINISH");
+            let costing = (new Date()).getTime() - now.getTime();
+            console.info("Result: " + succ + " successful, " + fail + " failed, costing " + costing + "ms.");
+            return {
+                name,
+                success: succ,
+                failure: fail,
+                ignore: list.length - succ - fail,
+                costing
+            }
         }
     };
     return client;
 }
 
 function run(...tests) {
+    console.info("START")
+    let count = {
+        success: 0,
+        failure: 0,
+        ignore: 0,
+        costing: 0
+    }
     tests.forEach(item => {
-        item.run();
+        let summary = item.run();
+        count.success += summary.success;
+        count.failure += summary.failure;
+        count.ignore += summary.ignore;
+        count.costing += summary.costing;
     });
-    console.info("Finished.")
+    console.info("-----------------");
+    console.info("DONE");
+    console.info("Result: " + count.success + " successful, " + count.failure + " failed, " + count.ignore + " ignored, costing " + count.costing + "ms.");
 }
 
-var assert = {
+function throwError(summary, details, message) {
+    var err = "Expect " + summary + " #" + assertCount + " " + details;
+    if (message) err+= " | " + errorMessage;
+    throw err;
+}
+
+let assert = {
     equals(a, b, errorMessage) {
-        if (a !== b) throw errorMessage || "not equal";
+        if (a !== b) throwError("equal", a + " !== " + b, errorMessage);
+        assertCount++;
+    },
+    isTrue(a, strict, errorMessage) {
+        if (strict) {
+            if (a !== true) throwError("equals true", a, errorMessage);
+        } else {
+            if (!a) throwError("is true", a, errorMessage);
+        }
+
+        assertCount++;
+    },
+    isFalse(a, strict, errorMessage) {
+        if (strict) {
+            if (a !== false) throwError("equals false", a, errorMessage);
+        } else {
+            if (a) throwError("is false", a, errorMessage);
+        }
+
+        assertCount++;
+    },
+    isNull(a, errorMessage) {
+        if (a != null) throwError("is null", a, errorMessage);
+        assertCount++;
     }
 }
 

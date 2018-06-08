@@ -1,59 +1,85 @@
-import * as Collection from "./collection";
-import * as CoreLib from "./core";
-import * as EventsLib from "./events";
-import * as AccessorLib from "./accessor";
-import * as ValuesLib from "./values";
-
-export type PropsObservableAccessorContract = AccessorLib.PropsAccessorContract & AccessorLib.RegisterPropRequestContract<AccessorLib.SimplePropsAccessorContract, AccessorLib.SimpleValueAccessorContract<any>>;
+namespace DataSense {
+export type PropsObservableAccessorContract = PropsAccessorContract & RegisterPropRequestContract<SimplePropsAccessorContract, SimpleValueAccessorContract<any>>;
 
 export interface PropsFurtherEventsContract {
-    propBroadcastReceived: EventsLib.EventObservable;
-    broadcastReceived: EventsLib.SingleEventObservable<any>;
-    propNotifyReceived: EventsLib.EventObservable;
-    notifyReceived: EventsLib.SingleEventObservable<any>;
+    propBroadcastReceived: EventObservable;
+    broadcastReceived: SingleEventObservable<any>;
+    propNotifyReceived: EventObservable;
+    notifyReceived: SingleEventObservable<any>;
     sendPropRequest(key: string, type: string, value: any): void;
     sendRequest(type: string, value: any): void;
-    sendPropBroadcast(key: string, data: any, message?: EventsLib.FireInfoContract | string): void;
-    sendBroadcast(data: any, message?: EventsLib.FireInfoContract | string): void;
+    sendPropBroadcast(key: string, data: any, message?: FireInfoContract | string): void;
+    sendBroadcast(data: any, message?: FireInfoContract | string): void;
 }
 
-export class PropsObservable implements CoreLib.DisposableArrayContract {
+/**
+ * The observable for object properties.
+ */
+export class PropsObservable implements DisposableArrayContract {
     private _instance: {
         has(key: string): boolean,
         get(key: string): any,
         keys(): string[],
-        pushFlows(key: string, ...flows: AccessorLib.ValueModifierContract<any>[]): AccessorLib.ChangeFlowRegisteredContract,
+        pushFlows(key: string, ...flows: ValueModifierContract<any>[]): ChangeFlowRegisteredContract,
         clearFlows(key: string): number,
         sendPropRequest(key: string, type: string, value: any): void,
         sendRequest(type: string, value: any): void,
-        sendPropBroadcast(key: string, data: any, message?: EventsLib.FireInfoContract | string): void,
-        sendBroadcast(data: any, message?: EventsLib.FireInfoContract | string): void
-    } & CoreLib.DisposableArrayContract;
+        sendPropBroadcast(key: string, data: any, message?: FireInfoContract | string): void,
+        sendBroadcast(data: any, message?: FireInfoContract | string): void
+    } & DisposableArrayContract;
 
-    public readonly propChanging: EventsLib.EventObservable;
+    /**
+     * The event raised before a property is changing.
+     */
+    public readonly propChanging: EventObservable;
 
-    public readonly propChanged: EventsLib.EventObservable;
+    /**
+     * The event raised after a property has changed.
+     */
+    public readonly propChanged: EventObservable;
 
-    public readonly propChangeFailed: EventsLib.EventObservable;
+    /**
+     * The event raised when a property is changed failed.
+     */
+    public readonly propChangeFailed: EventObservable;
 
-    public readonly propBroadcastReceived: EventsLib.EventObservable;
+    /**
+     * The event raised when a property broadcast message is recieved.
+     */
+    public readonly propBroadcastReceived: EventObservable;
 
-    public readonly propNotifyReceived: EventsLib.EventObservable;
+    /**
+     * The event raised when a property notify message is recieved.
+     */
+    public readonly propNotifyReceived: EventObservable;
 
-    public readonly anyPropChanging: EventsLib.SingleEventObservable<EventsLib.ChangingInfo<any>>;
+    public readonly anyPropChanging: SingleEventObservable<ChangingInfo<any>>;
 
-    public readonly anyPropChanged: EventsLib.SingleEventObservable<EventsLib.ChangedInfo<any>>;
+    public readonly anyPropChanged: SingleEventObservable<ChangedInfo<any>>;
 
-    public readonly anyPropChangeFailed: EventsLib.SingleEventObservable<EventsLib.ChangedInfo<any>>;
+    public readonly anyPropChangeFailed: SingleEventObservable<ChangedInfo<any>>;
 
-    public readonly propsChanged: EventsLib.SingleEventObservable<EventsLib.ChangedInfoSetContract>;
+    /**
+     * The event raised after a set of property have been changed.
+     */
+    public readonly propsChanged: SingleEventObservable<ChangedInfoSetContract>;
 
-    public readonly broadcastReceived: EventsLib.SingleEventObservable<any>;
+    /**
+     * The event raised when a broadcast message is recieved.
+     */
+    public readonly broadcastReceived: SingleEventObservable<any>;
 
-    public readonly notifyReceived: EventsLib.SingleEventObservable<any>;
+    /**
+     * The event raised when a notify message is recieved.
+     */
+    public readonly notifyReceived: SingleEventObservable<any>;
 
+    /**
+     * Initializes a new instance of the PropsObservable class.
+     * @param changer  A function to called that you can get the accessor of the properties and more by the argument.
+     */
     constructor(changer: PropsObservable | ((accessor: PropsObservableAccessorContract) => void)) {
-        let disposable = new CoreLib.DisposableArray();
+        let disposable = new DisposableArray();
         if ((changer instanceof PropsObservable) && changer._instance) {
             this._instance = {
                 ...changer._instance,
@@ -88,10 +114,11 @@ export class PropsObservable implements CoreLib.DisposableArrayContract {
                 this.broadcastReceived,
                 this.notifyReceived
             );
+            changer.pushDisposable(this);
             return;
         }
 
-        let obj = AccessorLib.propsAccessor();
+        let obj = Access.propsAccessor();
         this.propChanging = obj.propChanging;
         this.propChanged = obj.propChanged;
         this.propChangeFailed = obj.propChangeFailed;
@@ -103,7 +130,7 @@ export class PropsObservable implements CoreLib.DisposableArrayContract {
         this.propsChanged = obj.propsChanged;
         this.broadcastReceived = obj.broadcastReceived;
         this.notifyReceived = obj.notifyReceived;
-        this.pushDisposable(
+        disposable.pushDisposable(
             this.propChanging,
             this.propChanged,
             this.propChangeFailed,
@@ -117,7 +144,7 @@ export class PropsObservable implements CoreLib.DisposableArrayContract {
             this.notifyReceived
         );
 
-        let simpleAccessor: AccessorLib.SimplePropsAccessorContract = {
+        let simpleAccessor: SimplePropsAccessorContract = {
             hasProp(key) {
                 return obj.accessor.hasProp(key)
             },
@@ -151,7 +178,7 @@ export class PropsObservable implements CoreLib.DisposableArrayContract {
                 forceUpdate() {
                     obj.accessor.forceUpdateProp(key);
                 }
-            } as AccessorLib.SimpleValueAccessorContract<any>;
+            } as SimpleValueAccessorContract<any>;
         }
 
         let sendPropRequestH = (key: string, type: string, value: any) => {
@@ -205,22 +232,22 @@ export class PropsObservable implements CoreLib.DisposableArrayContract {
         if (typeof changer !== "function") return;
         let eventsMore: PropsFurtherEventsContract = (changer as any).additionalEvents;
         if (eventsMore) {
-            if (eventsMore.broadcastReceived instanceof EventsLib.SingleEventObservable) {
+            if (eventsMore.broadcastReceived instanceof SingleEventObservable) {
                 this.broadcastReceived = eventsMore.broadcastReceived;
                 this.pushDisposable(this.broadcastReceived);
             }
 
-            if (eventsMore.propBroadcastReceived instanceof EventsLib.EventObservable) {
+            if (eventsMore.propBroadcastReceived instanceof EventObservable) {
                 this.propBroadcastReceived = eventsMore.propBroadcastReceived;
                 this.pushDisposable(this.propBroadcastReceived);
             }
 
-            if (eventsMore.notifyReceived instanceof EventsLib.SingleEventObservable) {
+            if (eventsMore.notifyReceived instanceof SingleEventObservable) {
                 this.notifyReceived = eventsMore.notifyReceived;
                 this.pushDisposable(this.notifyReceived);
             }
 
-            if (eventsMore.propNotifyReceived instanceof EventsLib.EventObservable) {
+            if (eventsMore.propNotifyReceived instanceof EventObservable) {
                 this.propNotifyReceived = eventsMore.propNotifyReceived;
                 this.pushDisposable(this.propNotifyReceived);
             }
@@ -234,23 +261,34 @@ export class PropsObservable implements CoreLib.DisposableArrayContract {
         changer(obj.accessor);
     }
 
-    public pushDisposable(...items: CoreLib.DisposableContract[]) {
+    public pushDisposable(...items: DisposableContract[]) {
         return this._instance.pushDisposable(...items);
     }
 
+    /**
+     * Gets all property keys.
+     */
     public getKeys() {
         return this._instance.keys();
     }
 
+    /**
+     * Checks if the specific key is existed.
+     * @param key  The property key.
+     */
     public hasProp(key: string) {
         return this._instance.has(key);
     }
 
+    /**
+     * Gets a value of the specific key.
+     * @param key  The property key.
+     */
     public getProp(key: string) {
         return this._instance.get(key);
     }
 
-    public registerChangeFlow(key: string, ...value: AccessorLib.ValueModifierContract<any>[]) {
+    public registerChangeFlow(key: string, ...value: ValueModifierContract<any>[]) {
         return this._instance.pushFlows(key, ...value);
     }
 
@@ -260,140 +298,161 @@ export class PropsObservable implements CoreLib.DisposableArrayContract {
 
     public onPropChanging<T>(
         key: string,
-        h: EventsLib.EventHandlerContract<EventsLib.ChangingInfo<T>> | EventsLib.EventHandlerContract<EventsLib.ChangingInfo<T>>[],
+        h: EventHandlerContract<ChangingInfo<T>> | EventHandlerContract<ChangingInfo<T>>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.propChanging.on(key, h, thisArg, options, disposableArray);
     }
 
     public onPropChanged<T>(
         key: string,
-        h: EventsLib.EventHandlerContract<EventsLib.ChangedInfo<T>> | EventsLib.EventHandlerContract<EventsLib.ChangedInfo<T>>[],
+        h: EventHandlerContract<ChangedInfo<T>> | EventHandlerContract<ChangedInfo<T>>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.propChanged.on(key, h, thisArg, options, disposableArray);
     }
 
     public onPropChangeFailed<T>(
         key: string,
-        h: EventsLib.EventHandlerContract<EventsLib.ChangedInfo<T>> | EventsLib.EventHandlerContract<EventsLib.ChangedInfo<T>>[],
+        h: EventHandlerContract<ChangedInfo<T>> | EventHandlerContract<ChangedInfo<T>>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
-        if (!key || typeof key !== "string") return EventsLib.EventObservable.createFailedOnResult(null);
+        if (!key || typeof key !== "string") return EventObservable.createFailedOnResult(null);
         return this.propChangeFailed.on(key, h, thisArg, options, disposableArray);
     }
 
     public onAnyPropChanging(
-        h: EventsLib.EventHandlerContract<EventsLib.ChangingInfo<any>> | EventsLib.EventHandlerContract<EventsLib.ChangingInfo<any>>[],
+        h: EventHandlerContract<ChangingInfo<any>> | EventHandlerContract<ChangingInfo<any>>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.anyPropChanging.on(h, thisArg, options, disposableArray);
     }
 
     public onAnyPropChanged(
-        h: EventsLib.EventHandlerContract<EventsLib.ChangedInfo<any>> | EventsLib.EventHandlerContract<EventsLib.ChangedInfo<any>>[],
+        h: EventHandlerContract<ChangedInfo<any>> | EventHandlerContract<ChangedInfo<any>>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.anyPropChanged.on(h, thisArg, options, disposableArray);
     }
 
     public onAnyPropChangeFailed(
-        h: EventsLib.EventHandlerContract<EventsLib.ChangedInfo<any>> | EventsLib.EventHandlerContract<EventsLib.ChangedInfo<any>>[],
+        h: EventHandlerContract<ChangedInfo<any>> | EventHandlerContract<ChangedInfo<any>>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.anyPropChangeFailed.on(h, thisArg, options, disposableArray);
     }
 
     public onPropsChanged(
-        h: EventsLib.EventHandlerContract<EventsLib.ChangedInfoSetContract> | EventsLib.EventHandlerContract<EventsLib.ChangedInfoSetContract>[],
+        h: EventHandlerContract<ChangedInfoSetContract> | EventHandlerContract<ChangedInfoSetContract>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.propsChanged.on(h, thisArg, options, disposableArray);
     }
 
     public onPropBroadcastReceived(
         key: string,
-        h: EventsLib.EventHandlerContract<any> | EventsLib.EventHandlerContract<any>[],
+        h: EventHandlerContract<any> | EventHandlerContract<any>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.propBroadcastReceived.on(key, h, thisArg, options, disposableArray);
     }
 
     public onBroadcastReceived(
-        h: EventsLib.EventHandlerContract<any> | EventsLib.EventHandlerContract<any>[],
+        h: EventHandlerContract<any> | EventHandlerContract<any>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.broadcastReceived.on(h, thisArg, options, disposableArray);
     }
 
     public onPropNotifyReceived(
         key: string,
-        h: EventsLib.EventHandlerContract<any> | EventsLib.EventHandlerContract<any>[],
+        h: EventHandlerContract<any> | EventHandlerContract<any>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.propNotifyReceived.on<any>(key, h, thisArg, options, disposableArray);
     }
 
+    public onNotifyReceived(
+        h: EventHandlerContract<any> | EventHandlerContract<any>[],
+        thisArg?: any,
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
+    ) {
+        return this.notifyReceived.on(h, thisArg, options, disposableArray);
+    }
+
     public subscribeProp<T>(key: string, h: (newValue: T) => void, thisArg?: any) {
-        return this.propChanged.subscribeSingle(key, h, thisArg, (newValue: EventsLib.ChangedInfo<T>) => newValue.value);
+        return this.propChanged.subscribeSingle(key, h, thisArg, (newValue: ChangedInfo<T>) => newValue.value);
     }
 
-    public subscribeProps(h: (changeSet: EventsLib.ChangedInfo<any>[]) => void, thisArg?: any) {
-        return this.propsChanged.subscribeWithConvertor(h, thisArg, (changeSet: EventsLib.ChangedInfoSetContract) => changeSet.changes);
+    public subscribeProps(h: (changeSet: ChangedInfo<any>[]) => void, thisArg?: any) {
+        return this.propsChanged.subscribeWithConvertor(h, thisArg, (changeSet: ChangedInfoSetContract) => changeSet.changes);
     }
 
+    /**
+     * Sends a property request message.
+     * @param key  The property key.
+     * @param type  The request type.
+     * @param value  The data.
+     */
     public sendPropRequest(key: string, type: string, value: any) {
         this._instance.sendPropRequest(key, type, value);
     }
 
+    /**
+     * Sends a request message.
+     * @param type  The request type.
+     * @param value  The data.
+     */
     public sendRequest(type: string, value: any) {
         this._instance.sendRequest(type, value);
     }
 
-    public sendPropBroadcast(key: string, data: any, message?: EventsLib.FireInfoContract | string) {
+    public sendPropBroadcast(key: string, data: any, message?: FireInfoContract | string) {
         this._instance.sendPropBroadcast(key, data, message);
     }
 
-    public sendBroadcast(data: any, message?: EventsLib.FireInfoContract | string) {
+    public sendBroadcast(data: any, message?: FireInfoContract | string) {
         this._instance.sendBroadcast(data, message);
     }
 
     public createPropObservable<T>(key: string) {
         let obj: {
-            accessor?: AccessorLib.ValueAccessorContract<T>
+            accessor?: ValueAccessorContract<T>
         } = {};
-        let sendBroadcast = (data: any, message?: EventsLib.FireInfoContract | string) => {
+        let sendBroadcast = (data: any, message?: FireInfoContract | string) => {
             this.sendPropBroadcast(key, data, message);
         };
-        let h = (accessor: AccessorLib.ValueAccessorContract<T>) => {
+        let h = (accessor: ValueAccessorContract<T>) => {
             obj.accessor = accessor;
         };
         (h as any) = {
             broadcastReceived: this.propBroadcastReceived.createSingleObservable(key),
             notifyReceived: this.propNotifyReceived.createSingleObservable(key),
             sendBroadcast
-        } as ValuesLib.ValueFurtherEventsContract;
-        let result = new ValuesLib.ValueObservable<T>(accessor => {
+        } as ValueFurtherEventsContract;
+        let result = new ValueObservable<T>(accessor => {
+            accessor.set(this.getProp(key));
             obj.accessor = accessor;
         });
         let onToken = this.onPropChanging<T>(key, (ev, evController) => {
@@ -414,30 +473,56 @@ export class PropsObservable implements CoreLib.DisposableArrayContract {
         return new PropsObservable(this);
     }
 
+    public copyModel() {
+        let obj: any = {};
+        this.getKeys().forEach(key => {
+            obj[key] = this.getProp(key);
+        });
+        return obj;
+    }
+
+    public toJSON() {
+        let value = this.copyModel();
+        try {
+            if (value != null) return JSON.stringify(value);
+        } catch (ex) {}
+        return (new String(value)).toString();
+    }
+
+    /**
+     * Disposes the instance.
+     */
     public dispose() {
         this._instance.dispose();
     }
 }
 
+/**
+ * Object property accessing and observing client.
+ */
 export class PropsClient extends PropsObservable {
     public readonly proxy: any;
 
-    private readonly _propSetter: (key: string, value: any, message?: EventsLib.FireInfoContract | string) => EventsLib.ChangedInfo<any>;
-    private readonly _sendPropNotify: (key: string, data: any, message?: EventsLib.FireInfoContract | string) => void;
-    private readonly _sendNotify: (data: any, message?: EventsLib.FireInfoContract | string) => void;
-    private readonly _registerPropRequestHandler: (key: string, type: string, h: (owner: AccessorLib.SimpleValueAccessorContract<any>, value: any) => void) => boolean;
-    private readonly _registerRequestHandler: (type: string, h: (owner: AccessorLib.SimplePropsAccessorContract, value: any) => void) => boolean;
+    private readonly _propSetter: (key: string, value: any, message?: FireInfoContract | string) => ChangedInfo<any>;
+    private readonly _sendPropNotify: (key: string, data: any, message?: FireInfoContract | string) => void;
+    private readonly _sendNotify: (data: any, message?: FireInfoContract | string) => void;
+    private readonly _registerPropRequestHandler: (key: string, type: string, h: (owner: SimpleValueAccessorContract<any>, value: any) => void) => boolean;
+    private readonly _registerRequestHandler: (type: string, h: (owner: SimplePropsAccessorContract, value: any) => void) => boolean;
 
     constructor(
-        modifier: (setter: (key: string, newValue: any, message?: EventsLib.FireInfoContract | string) => AccessorLib.ValueResolveContract<any>) => void,
-        propSetter: (key: string, value: any, message?: EventsLib.FireInfoContract | string) => EventsLib.ChangedInfo<any>,
-        sendPropNotify: (key: string, data: any, message?: EventsLib.FireInfoContract | string) => void,
-        sendNotify: (data: any, message?: EventsLib.FireInfoContract | string) => void,
-        registerPropRequestHandler: (key: string, type: string, h: (owner: AccessorLib.SimpleValueAccessorContract<any>, value: any) => void) => boolean,
-        registerRequestHandler: (type: string, h: (owner: AccessorLib.SimplePropsAccessorContract, value: any) => void) => boolean,
+        defaultValue: any,
+        modifier: (setter: (key: string, newValue: any, message?: FireInfoContract | string) => ValueResolveContract<any>) => void,
+        propSetter: (key: string, value: any, message?: FireInfoContract | string) => ChangedInfo<any>,
+        sendPropNotify: (key: string, data: any, message?: FireInfoContract | string) => void,
+        sendNotify: (data: any, message?: FireInfoContract | string) => void,
+        registerPropRequestHandler: (key: string, type: string, h: (owner: SimpleValueAccessorContract<any>, value: any) => void) => boolean,
+        registerRequestHandler: (type: string, h: (owner: SimplePropsAccessorContract, value: any) => void) => boolean,
         additionalEvents: PropsFurtherEventsContract
     ) {
-        let h = (acc: PropsObservableAccessorContract) => modifier(acc.customizedSetProp);
+        let h = (acc: PropsObservableAccessorContract) => {
+            acc.batchProp(defaultValue);
+            modifier(acc.customizedSetProp);
+        };
         if (additionalEvents) (h as any).additionalEvents = additionalEvents;
         super(h);
 
@@ -470,50 +555,76 @@ export class PropsClient extends PropsObservable {
         });
     }
 
-    public setProp(key: string, value: any, message?: EventsLib.FireInfoContract | string): boolean {
+    /**
+     * Sets a value of the specific key.
+     * @param key  The property key.
+     * @param value  The value of the property to set.
+     * @param message  A message for the setting event.
+     */
+    public setProp(key: string, value: any, message?: FireInfoContract | string): boolean {
         if (typeof this._propSetter !== "function") return false;
         let info = this._propSetter(key, value, message)
         return info ? info.success : false;
     }
 
-    public setPropForDetails<T>(key: string, value: T, message?: EventsLib.FireInfoContract | string): EventsLib.ChangedInfo<T> {
-        if (typeof this._propSetter !== "function") return EventsLib.ChangedInfo.fail(null, undefined, value, "not implemented");
+    /**
+     * Sets a value of the specific key. A status and further information will be returned.
+     * @param key  The property key.
+     * @param value  The value of the property to set.
+     * @param message  A message for the setting event.
+     */
+    public setPropForDetails<T>(key: string, value: T, message?: FireInfoContract | string): ChangedInfo<T> {
+        if (typeof this._propSetter !== "function") return ChangedInfo.fail(null, undefined, value, "not implemented");
         return this._propSetter(key, value, message);
     }
 
-    public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: EventsLib.FireInfoContract | string): Promise<T> {
-        return AccessorLib.setPromise((value, message?) => {
+    public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
+        return Access.setPromise((value, message?) => {
             return this.setPropForDetails(key, value, message);
         }, value, compatible, message);
     }
 
-    public setSubscribeProp<T>(key: string, value: CoreLib.SubscriberContract<T>, message?: EventsLib.FireInfoContract | string, callbackfn?: (ev: EventsLib.ChangedInfo<T>, message: EventsLib.FireInfoContract) => void, thisArg?: any) {
-        return AccessorLib.setSubscribe((value, message?) => {
+    public setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
+        return Access.setSubscribe((value, message?) => {
             return this.setPropForDetails(key, value, message);
         }, value, message, callbackfn, thisArg);
     }
 
-    public sendPropNotify(key: string, data: any, message?: EventsLib.FireInfoContract | string) {
+    public sendPropNotify(key: string, data: any, message?: FireInfoContract | string) {
         if (typeof this._sendPropNotify !== "function") return;
         this._sendPropNotify(key, data, message);
     }
 
-    public sendNotify(data: any, message?: EventsLib.FireInfoContract | string) {
+    public sendNotify(data: any, message?: FireInfoContract | string) {
         if (typeof this._sendNotify !== "function") return;
         this._sendNotify(data, message);
     }
 
-    public registerPropRequestHandler(key: string, type: string, h: (owner: AccessorLib.SimpleValueAccessorContract<any>, value: any) => void) {
+    /**
+     * Registers a handler to respond the request message for a property.
+     * @param key  The property key.
+     * @param type  The request type.
+     * @param h  The handler to respond the request message.
+     */
+    public registerPropRequestHandler(key: string, type: string, h: (owner: SimpleValueAccessorContract<any>, value: any) => void) {
         if (typeof this._registerPropRequestHandler !== "function") return false;
         return this._registerPropRequestHandler(key, type, h);
     }
 
-    public registerRequestHandler(type: string, h: (owner: AccessorLib.SimplePropsAccessorContract, value: any) => void) {
+    /**
+     * Registers a handler to respond the request message.
+     * @param type  The request type.
+     * @param h  The handler to respond the request message.
+     */
+    public registerRequestHandler(type: string, h: (owner: SimplePropsAccessorContract, value: any) => void) {
         if (typeof this._registerRequestHandler !== "function") return false;
         return this._registerRequestHandler(type, h);
     }
 }
 
+/**
+ * Object observable and controller.
+ */
 export class PropsController extends PropsObservable {
     private _accessor: PropsObservableAccessorContract;
 
@@ -563,56 +674,97 @@ export class PropsController extends PropsObservable {
         });
     }
 
-    public forceUpdateProp(key: string, message?: EventsLib.FireInfoContract | string) {
+    public forceUpdateProp(key: string, message?: FireInfoContract | string) {
         this._accessor.forceUpdateProp(key, message);
     }
 
-    public setProp(key: string, value: any, message?: EventsLib.FireInfoContract | string) {
+    /**
+     * Sets a value of the specific key.
+     * @param key  The property key.
+     * @param value  The value of the property to set.
+     * @param message  A message for the setting event.
+     */
+    public setProp(key: string, value: any, message?: FireInfoContract | string) {
         let info = this._accessor.setProp(key, value, message);
         return info ? info.success : false;
     }
 
-    public setPropForDetails<T>(key: string, value: T, message?: EventsLib.FireInfoContract | string): EventsLib.ChangedInfo<T> {
+    /**
+     * Sets a value of the specific key. A status and further information will be returned.
+     * @param key  The property key.
+     * @param value  The value of the property to set.
+     * @param message  A message for the setting event.
+     */
+    public setPropForDetails<T>(key: string, value: T, message?: FireInfoContract | string): ChangedInfo<T> {
         return this._accessor.setProp(key, value, message);
     }
 
-    public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: EventsLib.FireInfoContract | string): Promise<T> {
-        return AccessorLib.setPromise((value, message?) => {
+    public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
+        return Access.setPromise((value, message?) => {
             return this.setPropForDetails(key, value, message);
         }, value, compatible, message);
     }
 
-    public setSubscribeProp<T>(key: string, value: CoreLib.SubscriberContract<T>, message?: EventsLib.FireInfoContract | string, callbackfn?: (ev: EventsLib.ChangedInfo<T>, message: EventsLib.FireInfoContract) => void, thisArg?: any) {
-        return AccessorLib.setSubscribe((value, message?) => {
+    public setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
+        return Access.setSubscribe((value, message?) => {
             return this.setPropForDetails(key, value, message);
         }, value, message, callbackfn, thisArg);
     }
 
-    public sendPropNotify(key: string, data: any, message?: EventsLib.FireInfoContract | string) {
+    /**
+     * Removes a property.
+     * @param key  The property key.
+     * @param message  A message for the setting event.
+     */
+    public removeProp(key: string | string[], message?: FireInfoContract | string) {
+        return this._accessor.removeProp(key, message);
+    }
+
+    /**
+     * Batch sets properties.
+     * @param obj  The data with properties to override current ones.
+     * @param message  A message for the setting event.
+     */
+    public setProps(obj: any | PropUpdateActionContract<any>[], message?: FireInfoContract | string) {
+        return this._accessor.batchProp(obj, message);
+    }
+
+    public sendPropNotify(key: string, data: any, message?: FireInfoContract | string) {
         this._accessor.sendPropNotify(key, data, message);
     }
 
-    public sendNotify(data: any, message?: EventsLib.FireInfoContract | string) {
+    public sendNotify(data: any, message?: FireInfoContract | string) {
         this._accessor.sendNotify(data, message);
     }
 
-    public registerPropRequestHandler(key: string, type: string, h: (owner: AccessorLib.SimpleValueAccessorContract<any>, value: any) => void) {
+    /**
+     * Registers a handler to respond the request message for a property.
+     * @param key  The property key.
+     * @param type  The request type.
+     * @param h  The handler to respond the request message.
+     */
+    public registerPropRequestHandler(key: string, type: string, h: (owner: SimpleValueAccessorContract<any>, value: any) => void) {
         return this._accessor.registerPropRequestHandler(key, type, h);
     }
 
-    public registerRequestHandler(type: string, h: (owner: AccessorLib.SimplePropsAccessorContract, value: any) => void) {
+    /**
+     * Registers a handler to respond the request message.
+     * @param type  The request type.
+     * @param h  The handler to respond the request message.
+     */
+    public registerRequestHandler(type: string, h: (owner: SimplePropsAccessorContract, value: any) => void) {
         return this._accessor.registerRequestHandler(type, h);
     }
 
     public createPropClient<T>(key: string) {
-        let token: CoreLib.DisposableContract;
-        let sendBroadcast = (data: any, message?: EventsLib.FireInfoContract | string) => {
+        let token: DisposableContract;
+        let sendBroadcast = (data: any, message?: FireInfoContract | string) => {
             this.sendPropBroadcast(key, data, message);
         };
         let sendRequest = (type: string, value: any) => {
             this.sendPropRequest(key, type, value);
         };
-        let client = new ValuesLib.ValueClient<T>(modifier => {
+        let client = new ValueClient<T>(this.getProp(key), modifier => {
             token = this.onPropChanging<T>(key, (ev, evController) => {
                 let updateToken = modifier(ev.valueRequest, evController.message);
                 if (!ev.observable) return;
@@ -640,20 +792,20 @@ export class PropsController extends PropsObservable {
     }
 
     public createClient() {
-        let token: CoreLib.DisposableContract;
+        let token: DisposableContract;
         var sendRequest = (type: string, value: any) => {
             this.sendRequest(type, value);
         };
         var sendPropRequest = (key: string, type: string, value: any) => {
             this.sendPropRequest(key, type, value);
         };
-        var sendBroadcast = (data: any, message?: EventsLib.FireInfoContract | string) => {
+        var sendBroadcast = (data: any, message?: FireInfoContract | string) => {
             this.sendBroadcast(data, message);
         };
-        var sendPropBroadcast = (key: string, data: any, message?: EventsLib.FireInfoContract | string) => {
+        var sendPropBroadcast = (key: string, data: any, message?: FireInfoContract | string) => {
             this.sendPropBroadcast(key, data, message);
         };
-        let client = new PropsClient(modifier => {
+        let client = new PropsClient(this.copyModel(), modifier => {
             token = this.onAnyPropChanging((ev, evController) => {
                 let updateToken = modifier(ev.key, ev.valueRequest, evController.message);
                 if (!ev.observable) return;
@@ -677,6 +829,8 @@ export class PropsController extends PropsObservable {
             sendBroadcast
         });
         client.pushDisposable(token);
+        this.pushDisposable(client);
         return client;
     }
+}
 }

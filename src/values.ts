@@ -1,45 +1,57 @@
-import * as Collection from "./collection";
-import * as CoreLib from "./core";
-import * as EventsLib from "./events";
-import * as AccessorLib from "./accessor";
+namespace DataSense {
 
-export type ValueObservableAccessorContract<T> = AccessorLib.ValueAccessorContract<T> & AccessorLib.RegisterRequestContract<AccessorLib.SimpleValueAccessorContract<T>>;
+export type ValueObservableAccessorContract<T> = ValueAccessorContract<T> & RegisterRequestContract<SimpleValueAccessorContract<T>>;
 
 export interface ValueFurtherEventsContract {
-    broadcastReceived: EventsLib.SingleEventObservable<any>;
-    notifyReceived: EventsLib.SingleEventObservable<any>;
+    broadcastReceived: SingleEventObservable<any>;
+    notifyReceived: SingleEventObservable<any>;
     sendRequest(type: string, value: any): void;
-    sendBroadcast(data: any, message?: EventsLib.FireInfoContract | string): void;
+    sendBroadcast(data: any, message?: FireInfoContract | string): void;
 }
 
 /**
- * The observable for value.
+ * The observable for data value.
  */
-export class ValueObservable<T> implements CoreLib.DisposableArrayContract {
+export class ValueObservable<T> implements DisposableArrayContract {
     private _instance: {
         get(): T,
-        pushFlows(...flows: AccessorLib.ValueModifierContract<any>[]): AccessorLib.ChangeFlowRegisteredContract,
+        pushFlows(...flows: ValueModifierContract<any>[]): ChangeFlowRegisteredContract,
         clearFlows(): number,
         sendRequest(type: string, value: any): void,
-        sendBroadcast(data: any, message?: EventsLib.FireInfoContract | string): void,
-    } & CoreLib.DisposableArrayContract;
+        sendBroadcast(data: any, message?: FireInfoContract | string): void,
+    } & DisposableArrayContract;
 
-    public readonly changing: EventsLib.SingleEventObservable<EventsLib.ChangingInfo<T>>;
+    /**
+     * The event raised before the value is changing.
+     */
+    public readonly changing: SingleEventObservable<ChangingInfo<T>>;
 
-    public readonly changed: EventsLib.SingleEventObservable<EventsLib.ChangedInfo<T>>;
+    /**
+     * The event raised after the value has changed.
+     */
+    public readonly changed: SingleEventObservable<ChangedInfo<T>>;
 
-    public readonly changeFailed: EventsLib.SingleEventObservable<EventsLib.ChangedInfo<T>>;
+    /**
+     * The event raised when the value is changed failed.
+     */
+    public readonly changeFailed: SingleEventObservable<ChangedInfo<T>>;
 
-    public readonly broadcastReceived: EventsLib.SingleEventObservable<any>;
+    /**
+     * The event raised when a broadcast message is recieved.
+     */
+    public readonly broadcastReceived: SingleEventObservable<any>;
 
-    public readonly notifyReceived: EventsLib.SingleEventObservable<any>;
+    /**
+     * The event raised when a notify message is recieved.
+     */
+    public readonly notifyReceived: SingleEventObservable<any>;
 
     /**
      * Initializes a new instance of the ValueObservable class.
-     * @param changer  A function to called that you can get the setter of the value by the argument.
+     * @param changer  A function to called that you can get the accessor of the value by the argument.
      */
     constructor(changer: ValueObservable<T> | ((changed: ValueObservableAccessorContract<T>) => void)) {
-        let disposable = new CoreLib.DisposableArray();
+        let disposable = new DisposableArray();
         let accessKey = "value";
         if ((changer instanceof ValueObservable) && changer._instance) {
             this._instance = {
@@ -57,12 +69,13 @@ export class ValueObservable<T> implements CoreLib.DisposableArrayContract {
             this.broadcastReceived = changer.broadcastReceived.createObservable();
             this.notifyReceived = changer.notifyReceived.createObservable();
             this.pushDisposable(this.changing, this.changed, this.changeFailed, this.broadcastReceived, this.notifyReceived);
+            changer.pushDisposable(this);
             return;
         }
 
         let formatter: (value: any) => T;
         let validator: (value: T) => boolean;
-        let obj = AccessorLib.propsAccessor();
+        let obj = Access.propsAccessor();
         obj.accessor.setFormatter((key, value) => {
             if (typeof formatter !== "function" || key !== accessKey) return value;
             return formatter(value);
@@ -76,16 +89,16 @@ export class ValueObservable<T> implements CoreLib.DisposableArrayContract {
         this.changeFailed = obj.propChangeFailed.createSingleObservable(accessKey);
         this.broadcastReceived = obj.propBroadcastReceived.createSingleObservable(accessKey);
         this.notifyReceived = obj.propNotifyReceived.createSingleObservable(accessKey);
-        this.pushDisposable(this.changing, this.changed, this.changeFailed, this.broadcastReceived, this.notifyReceived);
+        disposable.pushDisposable(this.changing, this.changed, this.changeFailed, this.broadcastReceived, this.notifyReceived);
 
-        let simpleAccessor: AccessorLib.SimpleValueAccessorContract<T> = {
+        let simpleAccessor: SimpleValueAccessorContract<T> = {
             get() {
                 return obj.accessor.getProp(accessKey);
             },
             set(value, message?) {
                 return obj.accessor.setProp(accessKey, value, message);
             },
-            forceUpdate(message?: EventsLib.FireInfoContract | string) {
+            forceUpdate(message?: FireInfoContract | string) {
                 obj.accessor.forceUpdateProp(accessKey, message);
             }
         };
@@ -124,12 +137,12 @@ export class ValueObservable<T> implements CoreLib.DisposableArrayContract {
         if (typeof changer !== "function") return;
         let eventsMore: ValueFurtherEventsContract = (changer as any).additionalEvents;
         if (eventsMore) {
-            if (eventsMore.broadcastReceived instanceof EventsLib.SingleEventObservable) {
+            if (eventsMore.broadcastReceived instanceof SingleEventObservable) {
                 this.broadcastReceived = eventsMore.broadcastReceived;
                 this.pushDisposable(this.broadcastReceived);
             }
 
-            if (eventsMore.notifyReceived instanceof EventsLib.SingleEventObservable) {
+            if (eventsMore.notifyReceived instanceof SingleEventObservable) {
                 this.notifyReceived = eventsMore.notifyReceived;
                 this.pushDisposable(this.notifyReceived);
             }
@@ -180,15 +193,32 @@ export class ValueObservable<T> implements CoreLib.DisposableArrayContract {
         });
     }
 
-    public pushDisposable(...items: CoreLib.DisposableContract[]) {
+    public pushDisposable(...items: DisposableContract[]) {
         return this._instance.pushDisposable(...items);
     }
 
+    /**
+     * Gets the value.
+     */
     public get() {
         return this._instance.get();
     }
 
-    public registerChangeFlow(...value: AccessorLib.ValueModifierContract<T>[]) {
+    /**
+     * Gets the value.
+     */
+    public getType() {
+        return typeof this._instance.get();
+    }
+
+    /**
+     * Gets the value.
+     */
+    public instanceOf(c: any) {
+        return this._instance.get() instanceof c;
+    }
+
+    public registerChangeFlow(...value: ValueModifierContract<T>[]) {
         return this._instance.pushFlows(...value);
     }
 
@@ -197,59 +227,64 @@ export class ValueObservable<T> implements CoreLib.DisposableArrayContract {
     }
 
     public onChanging(
-        h: EventsLib.EventHandlerContract<EventsLib.ChangingInfo<T>> | EventsLib.EventHandlerContract<EventsLib.ChangingInfo<T>>[],
+        h: EventHandlerContract<ChangingInfo<T>> | EventHandlerContract<ChangingInfo<T>>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.changing.on(h, thisArg, options, disposableArray);
     }
 
     public onChanged(
-        h: EventsLib.EventHandlerContract<EventsLib.ChangedInfo<T>> | EventsLib.EventHandlerContract<EventsLib.ChangedInfo<T>>[],
+        h: EventHandlerContract<ChangedInfo<T>> | EventHandlerContract<ChangedInfo<T>>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.changed.on(h, thisArg, options, disposableArray);
     }
 
     public onChangeFailed(
-        h: EventsLib.EventHandlerContract<EventsLib.ChangedInfo<T>> | EventsLib.EventHandlerContract<EventsLib.ChangedInfo<T>>[],
+        h: EventHandlerContract<ChangedInfo<T>> | EventHandlerContract<ChangedInfo<T>>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.changeFailed.on(h, thisArg, options, disposableArray);
     }
 
     public onBroadcastReceived(
-        h: EventsLib.EventHandlerContract<any> | EventsLib.EventHandlerContract<any>[],
+        h: EventHandlerContract<any> | EventHandlerContract<any>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.broadcastReceived.on(h, thisArg, options, disposableArray);
     }
 
     public onNotifyReceived(
-        h: EventsLib.EventHandlerContract<any> | EventsLib.EventHandlerContract<any>[],
+        h: EventHandlerContract<any> | EventHandlerContract<any>[],
         thisArg?: any,
-        options?: EventsLib.EventOptionsContract,
-        disposableArray?: CoreLib.DisposableArrayContract
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
     ) {
         return this.notifyReceived.on(h, thisArg, options, disposableArray);
     }
 
-    public subscribe(h: (newValue: T) => void, thisArg?: any): CoreLib.SubscriberCompatibleResultContract {
+    public subscribe(h: (newValue: T) => void, thisArg?: any): SubscriberCompatibleResultContract {
         return this.changed.subscribeWithConvertor<T>(h, thisArg, newValue => newValue.value);
     }
 
+    /**
+     * Sends a request message.
+     * @param type  The request type.
+     * @param value  The data.
+     */
     public sendRequest(type: string, value: any) {
         this._instance.sendRequest(type, value);
     }
 
-    public sendBroadcast(data: any, message?: EventsLib.FireInfoContract | string) {
+    public sendBroadcast(data: any, message?: FireInfoContract | string) {
         this._instance.sendBroadcast(data, message);
     }
 
@@ -257,6 +292,9 @@ export class ValueObservable<T> implements CoreLib.DisposableArrayContract {
         return new ValueObservable<T>(this);
     }
 
+    /**
+     * Disposes the instance.
+     */
     public dispose() {
         this._instance.dispose();
     }
@@ -270,19 +308,26 @@ export class ValueObservable<T> implements CoreLib.DisposableArrayContract {
     }
 }
 
+/**
+ * Data property accessing and observing client.
+ */
 export class ValueClient<T> extends ValueObservable<T> {
-    private readonly _setter: (value: T, message?: EventsLib.FireInfoContract | string) => EventsLib.ChangedInfo<T>;
-    private readonly _sendNotify: (data: any, message?: EventsLib.FireInfoContract | string) => void;
-    private readonly _registerRequestHandler: (type: string, h: (owner: AccessorLib.SimpleValueAccessorContract<T>, value: any) => void) => boolean;
+    private readonly _setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>;
+    private readonly _sendNotify: (data: any, message?: FireInfoContract | string) => void;
+    private readonly _registerRequestHandler: (type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) => boolean;
 
     constructor(
-        modifier: (setter: AccessorLib.ValueModifierContract<T>) => void,
-        setter: (value: T, message?: EventsLib.FireInfoContract | string) => EventsLib.ChangedInfo<T>,
-        sendNotify: (data: any, message?: EventsLib.FireInfoContract | string) => void,
-        registerRequestHandler: (type: string, h: (owner: AccessorLib.SimpleValueAccessorContract<T>, value: any) => void) => boolean,
+        defaultValue: T,
+        modifier: (setter: ValueModifierContract<T>) => void,
+        setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>,
+        sendNotify: (data: any, message?: FireInfoContract | string) => void,
+        registerRequestHandler: (type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) => boolean,
         additionalEvents: ValueFurtherEventsContract
     ) {
-        let h = (acc: ValueObservableAccessorContract<T>) => modifier(acc.customizedSet);
+        let h = (acc: ValueObservableAccessorContract<T>) => {
+            acc.set(defaultValue);
+            modifier(acc.customizedSet);
+        };
         if (additionalEvents) (h as any).additionalEvents = additionalEvents;
         super(h);
 
@@ -291,42 +336,50 @@ export class ValueClient<T> extends ValueObservable<T> {
         if (typeof registerRequestHandler === "function") this._registerRequestHandler = registerRequestHandler;
     }
 
-    public set(value: T, message?: EventsLib.FireInfoContract | string): boolean {
+    public set(value: T, message?: FireInfoContract | string): boolean {
         if (typeof this._setter !== "function") return false;
         let info = this._setter(value, message)
         return info ? info.success : false;
     }
 
-    public setForDetails(value: T, message?: EventsLib.FireInfoContract | string): EventsLib.ChangedInfo<T> {
-        if (typeof this._setter !== "function") return EventsLib.ChangedInfo.fail(null, undefined, value, "not implemented");
+    public setForDetails(value: T, message?: FireInfoContract | string): ChangedInfo<T> {
+        if (typeof this._setter !== "function") return ChangedInfo.fail(null, undefined, value, "not implemented");
         return this._setter(value, message);
     }
 
-    public setPromise(value: Promise<T>, compatible?: boolean, message?: EventsLib.FireInfoContract | string): Promise<T> {
-        return AccessorLib.setPromise((value, message?) => {
+    public setPromise(value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
+        return Access.setPromise((value, message?) => {
             return this.setForDetails(value, message);
         }, value, compatible, message);
     }
 
-    public setSubscribe(value: CoreLib.SubscriberContract<T>, message?: EventsLib.FireInfoContract | string, callbackfn?: (ev: EventsLib.ChangedInfo<T>, message: EventsLib.FireInfoContract) => void, thisArg?: any) {
-        return AccessorLib.setSubscribe((value, message?) => {
+    public setSubscribe(value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
+        return Access.setSubscribe((value, message?) => {
             return this.setForDetails(value, message);
         }, value, message, callbackfn, thisArg);
     }
 
-    public sendNotify(data: any, message?: EventsLib.FireInfoContract | string) {
+    public sendNotify(data: any, message?: FireInfoContract | string) {
         this._sendNotify(data, message);
     }
 
-    public registerRequestHandler(type: string, h: (owner: AccessorLib.SimpleValueAccessorContract<T>, value: any) => void) {
+    /**
+     * Registers a handler to respond the request message.
+     * @param type  The request type.
+     * @param h  The handler to respond the request message.
+     */
+    public registerRequestHandler(type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) {
         if (typeof this._registerRequestHandler !== "function") return false;
         return this._registerRequestHandler(type, h);
     }
 }
 
+/**
+ * Data observable and controller.
+ */
 export class ValueController<T> extends ValueObservable<T> {
     private _accessor: ValueObservableAccessorContract<T>;
-    private _observing: AccessorLib.ChangeFlowRegisteredContract;
+    private _observing: ChangeFlowRegisteredContract;
 
     public get formatter() {
         return this._accessor.getFormatter();
@@ -350,28 +403,43 @@ export class ValueController<T> extends ValueObservable<T> {
         this._accessor = a;
     }
 
-    public set(value: T, message?: EventsLib.FireInfoContract | string): boolean {
+    /**
+     * Sets value.
+     * @param value  The value of the property to set.
+     * @param message  A message for the setting event.
+     */
+    public set(value: T, message?: FireInfoContract | string): boolean {
         let info = this._accessor.set(value, message);
         return info ? info.success : false;
     }
 
-    public setForDetails(value: T, message?: EventsLib.FireInfoContract | string): EventsLib.ChangedInfo<T> {
+    /**
+     * Sets the value. A status and further information will be returned.
+     * @param value  The value of the property to set.
+     * @param message  A message for the setting event.
+     */
+    public setForDetails(value: T, message?: FireInfoContract | string): ChangedInfo<T> {
         return this._accessor.set(value, message);
     }
 
-    public setPromise(value: Promise<T>, compatible?: boolean, message?: EventsLib.FireInfoContract | string): Promise<T> {
-        return AccessorLib.setPromise((value, message?) => {
+    public setPromise(value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
+        return Access.setPromise((value, message?) => {
             return this.setForDetails(value, message);
         }, value, compatible, message);
     }
 
-    public setSubscribe(value: CoreLib.SubscriberContract<T>, message?: EventsLib.FireInfoContract | string, callbackfn?: (ev: EventsLib.ChangedInfo<T>, message: EventsLib.FireInfoContract) => void, thisArg?: any) {
-        return AccessorLib.setSubscribe((value, message?) => {
+    public setSubscribe(value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
+        return Access.setSubscribe((value, message?) => {
             return this.setForDetails(value, message);
         }, value, message, callbackfn, thisArg);
     }
 
-    public registerRequestHandler(type: string, h: (owner: AccessorLib.SimpleValueAccessorContract<T>, value: any) => void) {
+    /**
+     * Registers a handler to respond the request message.
+     * @param type  The request type.
+     * @param h  The handler to respond the request message.
+     */
+    public registerRequestHandler(type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) {
         return this._accessor.registerRequestHandler(type, h);
     }
 
@@ -390,7 +458,7 @@ export class ValueController<T> extends ValueObservable<T> {
         if (typeof disposeObserving.dispose === "function") disposeObserving.dispose();
     }
 
-    public syncFromObserving(message?: EventsLib.FireInfoContract | string) {
+    public syncFromObserving(message?: FireInfoContract | string) {
         let disposeObserving = this._observing;
         if (!disposeObserving || typeof disposeObserving.sync !== "function") return false;
         disposeObserving.sync(message);
@@ -402,14 +470,14 @@ export class ValueController<T> extends ValueObservable<T> {
     }
 
     public createClient() {
-        let token: CoreLib.DisposableContract;
+        let token: DisposableContract;
         var sendRequest = (type: string, value: any) => {
             this.sendRequest(type, value);
         };
-        var sendBroadcast = (data: any, message?: EventsLib.FireInfoContract | string) => {
+        var sendBroadcast = (data: any, message?: FireInfoContract | string) => {
             this.sendBroadcast(data, message);
         };
-        let client = new ValueClient<T>(modifier => {
+        let client = new ValueClient<T>(this.get(), modifier => {
             token = this.onChanging((ev, evController) => {
                 let updateToken = modifier(ev.valueRequest, evController.message);
                 if (!ev.observable) return;
@@ -429,10 +497,13 @@ export class ValueController<T> extends ValueObservable<T> {
             sendBroadcast
         });
         client.pushDisposable(token);
+        this.pushDisposable(client);
         return client;
     }
 
-    public sendNotify(data: any, message?: EventsLib.FireInfoContract | string) {
+    public sendNotify(data: any, message?: FireInfoContract | string) {
         this._accessor.sendNotify(data, message);
     }
+}
+
 }

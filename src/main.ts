@@ -1,11 +1,13 @@
-import * as Collection from "./collection";
-import * as CoreLib from "./core";
-import * as ValuesLib from "./values";
-import * as ObjectsLib from "./objects";
-import * as EventsLib from "./events";
+// For asynchronous modules loaders.
 
-let output = { ...Collection, ...CoreLib, ...ValuesLib, ...ObjectsLib, ...EventsLib };
-try {
-    if (typeof window !== "undefined") (window as any).DataSense = output;
-} catch (ex) {}
-export default output;
+(function () {
+    if (typeof define === 'function') {
+        if (define.amd || typeof __webpack_require__ !== "undefined") {
+            define(["exports"], function (exports: any) {
+                return DataSense;
+            });
+        }
+    } else if (typeof require === "function" && typeof exports === "object" && typeof module === "object") {
+        module["exports"] = DataSense;
+    }
+})();

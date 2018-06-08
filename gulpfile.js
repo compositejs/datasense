@@ -56,5 +56,5 @@ gulp.task('test', function () {
 });
 
 gulp.task('default', function () {
-    return buildTs();
+    return buildTs2();
 });

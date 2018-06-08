@@ -1,10 +1,9 @@
 {
     "compilerOptions": {
-        "outDir": "../dist",
+        "outFile": "../dist/index.js",
         "noImplicitAny": true,
         "target": "es5",
         "declaration": true,
-        "declarationDir": "../dist",
         "sourceMap": true,
         "moduleResolution": "node",
         "lib": [
