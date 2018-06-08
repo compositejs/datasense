@@ -20,7 +20,7 @@ testCase.add("Access", () => {
     value.set(null);
     assert.equals(value.get(), null);
 
-    // Add a listener event for changing.
+    // Add an event listener for changing.
     // It will raise when we set the value again.
     let nextValue;
     let changedResult = value.onChanged(ev => {
@@ -40,7 +40,7 @@ testCase.add("Access", () => {
     // We can dispose the event listener.
     changedResult.dispose();
 
-    // So the new value should be the old one even we set a new value.
+    // So the new value should be the old one since we dispose the event listener.
     value.set("opq");
     assert.equals(nextValue, "hijklmn");
 
@@ -61,13 +61,13 @@ testCase.add("Access", () => {
     assert.equals(nextValue, "rst");
 
     // And set again.
-    // It should not raise now since the event has diposed.
+    // It should not raise now since the event has disposed.
     // But the value should be changed.
     value.set("uvw");
     assert.equals(nextValue, "rst");
     assert.equals(value.get(), "uvw");
 
-    // We can also define some action.
+    // We can also define some actions.
     value.registerRequestHandler("increase", (acc, data) => {
         if (value.getType() !== "number") return;
         if (data == null) data = 1;
@@ -79,7 +79,7 @@ testCase.add("Access", () => {
         if (typeof data === "number") value.set(value.get() - data);
     });
 
-    // Now we will test if this can work.
+    // It will work as the actions defined when we send the requests.
     value.set(17);
     value.sendRequest("decrease", null);
     assert.equals(value.get(), 16);

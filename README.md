@@ -68,6 +68,16 @@ value.set("Morning!");
 console.info(value.get());
 ```
 
+You can customize the formatter and validator for the value. Following are samples.
+
+```typescript
+// Convert the value to string.
+value.formatter = newValue => (newValue || "").toString();
+
+// Make sure the value is not empty, null or undefined.
+value.validator = newValue => !!newValue;
+```
+
 And you can add event listener or subscribe for changes.
 
 ```typescript
@@ -99,8 +109,12 @@ value.onChanging(ev => {
 
 You can create an observable instance.
 
-```
+```typescript
 let valueObs = value.createObservable();
+valueObs.onChanged(ev => {});
+
+// All event listener and subscriber will be diposed if dispose this instance.
+valueObs.dispose();
 ```
 
 ### Object
@@ -118,9 +132,11 @@ props.setProp("name", "Kingcean");
 props.setProp("gender", "male");
 console.info(props.getProp("name"));
 console.info(`There is ${props.hasProp("birthday") ? "no " : ""} property of birthday registered here.`);
-props.onPropChanged(ev => {});
-props.onPropChanging(ev => {});
-props.subscribe(newValue => {});
+
+// Add event listeners or subscribe.
+props.onPropChanged("name", ev => {});
+props.onPropChanging("name", ev => {});
+props.subscribeProp("name", newValue => {});
 ```
 
 You can set props in a batch.
@@ -158,8 +174,12 @@ console.info(props.getProp("height") + "cm"); // 170cm
 
 And of course, you can create an observable instance without setter.
 
-```typesript
+```typescript
 let propsObs = props.createObservable();
+valueObs.onPropChanged("name", ev => {});
+
+// All event listener and subscriber will be diposed if dispose this instance.
+valueObs.dispose();
 ```
 
 See test cases for more. Enjoy!

@@ -13,10 +13,12 @@ testCase.add("Access", () => {
     assert.isTrue(obj.hasProp("name"));
     assert.equals(obj.getProp("name"), "abc");
 
-    // Add a listener event after the value is changed.
+    // Add an event listener after the value is changed.
     var nextValue;
     obj.onPropChanged("name", ev => {
         assert.equals(ev.key, "name");
+
+        // For test, we record the new value.
         nextValue = ev.value;
     });
     obj.setProp("name", "defg");
@@ -32,7 +34,7 @@ testCase.add("Access", () => {
     obj.setProp("null", null);
     assert.equals(obj.getProp("null"), null);
 
-    // Batch set props.
+    // Batch set properties.
     obj.setProps({
         name: "opq",
         key: "rst"
@@ -42,7 +44,7 @@ testCase.add("Access", () => {
     assert.equals(obj.getProp("key"), "rst");
     assert.equals(obj.getProp("more"), "lmn");
 
-    // Remove a prop.
+    // Remove a property.
     obj.removeProp("more");
     assert.isFalse(obj.hasProp("more"));
     assert.equals(obj.getProp("more"), undefined);
@@ -60,7 +62,7 @@ testCase.add("Access", () => {
     assert.equals(nextValue, "uvw");
     assert.equals(obj.proxy.name, "uvw");
 
-    // We can also define some action.
+    // We can also define some actions.
     obj.registerRequestHandler("something", (acc, data) => {
         obj.setProps({
             key: data.title,
@@ -163,7 +165,7 @@ testCase.add("Property", () => {
     let propName2 = obj.createPropObservable("name");
     let propValue = obj.createPropObservable("value");
 
-    // Check its value.
+    // Check their values.
     assert.equals(propName.get(), "abcdefg");
     assert.equals(propName2.get(), "abcdefg");
     assert.equals(propValue.get(), undefined);
