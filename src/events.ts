@@ -5,7 +5,7 @@ export type ChangeActionContract = "add" | "remove" | "update" | "delta" | "none
 export interface FireInfoContract {
     message?: string,
     source?: string,
-    data?: any
+    addition?: any
 }
 
 export interface ChangedInfoContract<T> {
@@ -30,8 +30,15 @@ export type EventHandlerContract<T> = (ev: T, controller: EventHandlerController
 
 export type OccurModelContract<T> = { h: (value: T) => void, thisArg: any, delay: boolean | number };
 
-export interface EventOptionsContract {
-    delay?: number | boolean;
+export type FireContract = (key: string, ev: any, message?: FireInfoContract | string) => void;
+
+export type OnAnyContract = (
+    h: EventHandlerContract<KeyValueContract<any>> | EventHandlerContract<KeyValueContract<any>>[],
+    thisArg?: any,
+    options?: EventOptionsContract
+) => AnyEventRegisterResultContract;
+
+export interface EventOptionsContract extends HitTaskOptionsContract {
     invalid?: number | boolean | ((ev: any) => boolean);
     invalidForNextTime?: boolean;
     arg?: any;
@@ -45,7 +52,11 @@ export interface EventHandlerControllerContract extends DisposableContract {
     readonly arg: any;
     readonly message: string;
     readonly source: string;
-    readonly additional: any;
+    readonly addition: any;
+    hasStoreData(propKey: string): boolean,
+    getStoreData(propKey: string): any,
+    setStoreData(propKey: string, propValue: any): void,
+    removeStoreData(...propKey: string[]): number
 }
 
 export interface EventRegisterResultContract<T> extends DisposableContract {
@@ -77,7 +88,7 @@ export class EventObservable implements DisposableArrayContract {
      * Initializes a new instance of the EventObservable class.
      * @param firer  The handler to fire.
      */
-    public constructor(firer: EventObservable | ((fire: (key: string, ev: any, message?: FireInfoContract | string) => void) => void), mapKey?: string | ((key: string) => string)) {
+    public constructor(firer: EventObservable | ((fire: FireContract, onAny: OnAnyContract) => void), mapKey?: string | ((key: string) => string)) {
         let disposable = new DisposableArray();
         let getKey = (key: string) => {
             if (!mapKey || !key || typeof key !== "string") return key;
@@ -133,74 +144,101 @@ export class EventObservable implements DisposableArrayContract {
             return count;
         };
         let process = (key: string, obj: {
-            h: ((ev: any, controller: EventHandlerControllerContract) => void)[],
+            task: HitTask,
             key: string,
             thisArg: any,
-            options: EventOptionsContract,
+            invalid?: number | boolean | ((ev: any) => boolean);
+            invalidForNextTime?: boolean;
+            arg?: any;
             isInvalid: boolean,
             time: Date,
             latestFireDate: Date,
+            store: any,
             count: number
         }, ev: any, message: FireInfoContract | string, removing: KeyValueContract<any>[], further: boolean) => {
             if (obj.isInvalid) return;
             let isInvalid = false;
-            if (obj.options.invalid) {
-                if (obj.options.invalid === true) {
+            if (obj.invalid) {
+                if (obj.invalid === true) {
                     isInvalid = true;
-                } else if (typeof obj.options.invalid === "number") {
-                    if (obj.options.invalid <= obj.count) isInvalid = true;
-                } else if (typeof obj.options.invalid === "function") {
-                    isInvalid = obj.options.invalid(ev);
+                } else if (typeof obj.invalid === "number") {
+                    if (obj.invalid <= obj.count) isInvalid = true;
+                } else if (typeof obj.invalid === "function") {
+                    isInvalid = obj.invalid(ev);
                 }
             }
 
             if (isInvalid) {
                 obj.isInvalid = true;
                 removing.push({ key: !further ? key : null, value: obj });
-                if (!obj.options.invalidForNextTime) return;
+                if (!obj.invalidForNextTime) return;
             }
 
+            let latestFireDate = obj.latestFireDate;
+            let currentFireDate = obj.latestFireDate = new Date();
             if (obj.count < Number.MAX_SAFE_INTEGER) obj.count++;
             let fireObj = typeof message === "string" ? { message } : (message || {});
             let working = true;
-            HitTask.debounce(() => {
-                obj.h.forEach(h => {
-                    if (typeof h !== "function") return;
-                    h.call(obj.thisArg, ev, {
-                        get key() {
-                            return obj.key || key;
-                        },
-                        get originalKey() {
-                            return key;
-                        },
-                        get count() {
-                            return obj.count;
-                        },
-                        get fireDate() {
-                            return obj.latestFireDate;
-                        },
-                        get registerDate() {
-                            return obj.time;
-                        },
-                        get arg() {
-                            return obj.options.arg;
-                        },
-                        get message() {
-                            return fireObj.message;
-                        },
-                        get source() {
-                            return fireObj.source;
-                        },
-                        get additional() {
-                            return fireObj.data;
-                        },
-                        dispose() {
-                            if (working) removing.push({ key: !further ? key : null, value: obj });
-                            else remove(key, obj);
-                        }
-                    } as EventHandlerControllerContract);
-                });
-            }, obj.options.delay);
+            obj.task.process({
+                ev,
+                c: {
+                    get key() {
+                        return obj.key || key;
+                    },
+                    get originalKey() {
+                        return key;
+                    },
+                    get count() {
+                        return obj.count;
+                    },
+                    get fireDate() {
+                        return currentFireDate;
+                    },
+                    get latestFireDate() {
+                        return latestFireDate;
+                    },
+                    get lastFireDate() {
+                        return obj.latestFireDate;
+                    },
+                    get registerDate() {
+                        return obj.time;
+                    },
+                    get arg() {
+                        return obj.arg;
+                    },
+                    get message() {
+                        return fireObj.message;
+                    },
+                    get source() {
+                        return fireObj.source;
+                    },
+                    get addition() {
+                        return fireObj.addition;
+                    },
+                    hasStoreData(propKey: string) {
+                        return (obj.store as Object).hasOwnProperty(propKey);
+                    },
+                    getStoreData(propKey: string) {
+                        return obj.store[propKey];
+                    },
+                    setStoreData(propKey: string, propValue: any) {
+                        obj.store[propKey] = propValue;
+                    },
+                    removeStoreData(...propKey: string[]) {
+                        let deltaCount = 0;
+                        propKey.forEach(propKeyItem => {
+                            if (!propKeyItem || typeof propKeyItem !== "string") return;
+                            deltaCount++;
+                            delete obj.store[propKeyItem];
+                        });
+                        return deltaCount;
+                    },
+                    dispose() {
+                        if (working) removing.push({ key: !further ? key : null, value: obj });
+                        else remove(key, obj);
+                    }
+                } as EventHandlerControllerContract
+            });
             working = false;
         };
 
@@ -237,21 +275,17 @@ export class EventObservable implements DisposableArrayContract {
                             return;
                         }
 
-                        obj.latestFireDate = new Date();
                         process(key, obj, ev, message, removing, true);
                         removingH();
                         return;
                     }
 
-                    obj.latestFireDate = new Date();
                     process(key, obj, ev, message, removing, false);
                 } else {
                     (store[key] as any[]).forEach(item => {
-                        item.latestFireDate = new Date();
                         process(key, item, ev, message, removing, false);
                     });
                     furtherHandlers.forEach(item => {
-                        item.latestFireDate = new Date();
                         process(key, item, ev, message, removing, true);
                     });
                 }
@@ -268,8 +302,53 @@ export class EventObservable implements DisposableArrayContract {
         };
 
         if (typeof firer !== "function") return;
+        let implInstance = this._instance;
         firer((key, ev, message) => {
-            this._instance.fire(key, ev, message);
+            implInstance.fire(key, ev, message);
+        }, (h, thisArg, options) => {
+            if (!h) h = [];
+            if (!(h instanceof Array)) h = [h];
+            if (!options) options = {};
+            let task = new HitTask();
+            task.setOptions({
+                delay: options.delay,
+                mergeMode: options.mergeMode,
+                span: options.span,
+                minCount: options.minCount,
+                maxCount: options.maxCount
+            });
+            task.pushHandler(ev => {
+                (h as EventHandlerContract<KeyValueContract<any>>[]).forEach(handler => {
+                    if (typeof handler === "function") handler(ev.ev, ev.c);
+                });
+            });
+            let obj = {
+                task,
+                arg: options.arg,
+                thisArg,
+                invalid: options.invalid,
+                invalidForNextTime: options.invalidForNextTime,
+                time: new Date(),
+                store: {},
+                count: 0
+            };
+            implInstance.push(null, obj);
+            let result: AnyEventRegisterResultContract = {
+                get count() {
+                    return obj.count;
+                },
+                get registerDate() {
+                    return obj.time;
+                },
+                fire(key: string, ev: any, message?: FireInfoContract | string) {
+                    implInstance.fire(key, ev, message);
+                },
+                dispose() {
+                    implInstance.remove(null, obj);
+                }
+            };
+            implInstance.pushDisposable(result);
+            return result;
         });
     }
 
@@ -304,7 +383,29 @@ export class EventObservable implements DisposableArrayContract {
         }
 
         if (!options) options = {};
-        let obj = { h, thisArg, options, time: new Date(), count: 0 };
+        let task = new HitTask();
+        task.setOptions({
+            delay: options.delay,
+            mergeMode: options.mergeMode,
+            span: options.span,
+            minCount: options.minCount,
+            maxCount: options.maxCount
+        });
+        task.pushHandler(ev => {
+            (h as EventHandlerContract<T>[]).forEach(handler => {
+                if (typeof handler === "function") handler(ev.ev, ev.c);
+            });
+        });
+        let obj = {
+            task,
+            arg: options.arg,
+            thisArg,
+            invalid: options.invalid,
+            invalidForNextTime: options.invalidForNextTime,
+            time: new Date(),
+            store: {},
+            count: 0
+        };
         let implInstance = this._instance;
         implInstance.push(key, obj);
         let result: EventRegisterResultContract<T> = {
@@ -337,64 +438,12 @@ export class EventObservable implements DisposableArrayContract {
         return this.on(key, h, thisArg, { invalid: 1 });
     }
 
-    public onAny(
-        h: EventHandlerContract<KeyValueContract<any>> | EventHandlerContract<KeyValueContract<any>>[],
-        thisArg?: any,
-        options?: EventOptionsContract,
-        disposableArray?: DisposableArrayContract): AnyEventRegisterResultContract {
-        if (!h) h = [];
-        if (!(h instanceof Array)) h = [h];
-        if (!options) options = {};
-        let obj = { h, thisArg, options, time: new Date(), count: 0 };
-        let implInstance = this._instance;
-        implInstance.push(null, obj);
-        let result: AnyEventRegisterResultContract = {
-            get count() {
-                return obj.count;
-            },
-            get registerDate() {
-                return obj.time;
-            },
-            fire(key: string, ev: any, message?: FireInfoContract | string) {
-                implInstance.fire(key, ev, message);
-            },
-            dispose() {
-                implInstance.remove(null, obj);
-            }
-        };
-        implInstance.pushDisposable(result);
-        if (disposableArray) disposableArray.pushDisposable(result);
-        return result;
-    }
-
     public clearOn(key: string) {
         this._instance.remove(key);
     }
 
     public createSingleObservable<T>(key: string) {
         return new SingleEventObservable<T>(this, key);
-    }
-
-    public subscribeAny(
-        h: (newValue: KeyValueContract<any>) => void,
-        thisArg?: any
-    ): SubscriberCompatibleResultContract {
-        let result: any;
-        if (typeof h !== "function") {
-            result = function () {};
-            result.dispose = function () {};
-            return result;
-        }
-
-        let dispose = this.onAny(ev => {
-            h.call(thisArg, ev);
-        });
-        this._instance.pushDisposable(dispose);
-        result = function () {
-            dispose.dispose();
-        };
-        result.dispose = dispose.dispose;
-        return result;
     }
 
     public subscribeSingle<T>(
@@ -454,6 +503,24 @@ export class EventObservable implements DisposableArrayContract {
         let result: any = function () {};
         result.dispose = function () {};
         return result;
+    }
+
+    public static createForElement<T extends Event>(
+        dom: HTMLElement,
+        eventType: string | keyof HTMLElementEventMap
+    ) {
+        let event = new EventController();
+        let listener = (ev: T) => {
+            event.fire(eventType, ev);
+        };
+        dom.addEventListener(eventType, listener);
+        let obs = event.createSingleObservable<T>(eventType);
+        obs.pushDisposable({
+            dispose() {
+                dom.removeEventListener(eventType, listener);
+            }
+        });
+        return obs;
     }
 }
 
@@ -535,14 +602,18 @@ export class SingleEventObservable<T> implements DisposableArrayContract {
  * Event observable and controller.
  */
 export class EventController extends EventObservable {
-    private _fireHandler: (key: string, ev: any, message?: FireInfoContract | string) => void;
+    private _fireHandler: FireContract;
+    private _onAny: OnAnyContract;
 
     constructor() {
-        let f: (key: string, ev: any, message?: FireInfoContract | string) => void;
-        super(fire => {
+        let f: FireContract;
+        let o: OnAnyContract;
+        super((fire, onAny) => {
             f = fire;
+            o = onAny;
         });
         this._fireHandler = f;
+        this._onAny = o;
     }
 
     /**
@@ -552,10 +623,42 @@ export class EventController extends EventObservable {
      * @param message  The additional information.
      * @param delay  A span in millisecond to delay this raising.
      */
-    fire(key: string, ev: any, message?: FireInfoContract | string, delay?: number | boolean): void {
-        HitTask.debounce(() => {
+    public fire(key: string, ev: any, message?: FireInfoContract | string, delay?: number | boolean): void {
+        HitTask.delay(() => {
             this._fireHandler(key, ev, message);
         }, delay);
+    }
+
+    public onAny(
+        h: EventHandlerContract<KeyValueContract<any>> | EventHandlerContract<KeyValueContract<any>>[],
+        thisArg?: any,
+        options?: EventOptionsContract,
+        disposableArray?: DisposableArrayContract
+    ): AnyEventRegisterResultContract {
+        let onResult = this._onAny(h, thisArg, options);
+        if (disposableArray && typeof disposableArray.pushDisposable === "function") disposableArray.pushDisposable(onResult);
+        return onResult;
+    }
+
+    public subscribeAny(
+        h: (newValue: KeyValueContract<any>) => void,
+        thisArg?: any
+    ): SubscriberCompatibleResultContract {
+        let result: any;
+        if (typeof h !== "function") {
+            result = function () {};
+            result.dispose = function () {};
+            return result;
+        }
+
+        let dispose = this.onAny(ev => {
+            h.call(thisArg, ev);
+        });
+        result = function () {
+            dispose.dispose();
+        };
+        result.dispose = dispose.dispose;
+        return result;
     }
 }
 
@@ -570,7 +673,17 @@ export class OnceObservable<T> {
         rejected?: OccurModelContract<T>[]
     } = {};
 
-    public readonly promise: Promise<T>;
+    public promise(): Promise<T> {
+        let resolveH: (value: T) => void;
+        let rejectH: (reason: any) => void;
+        let p = new Promise<T>((resolve, reject) => {
+            resolveH = resolve;
+            rejectH = reject;
+        });
+        this.onResolved(resolveH);
+        this.onRejected(rejectH);
+        return p;
+    }
 
     constructor(executor: OnceObservable<T> | ((resolve: (value: T) => void, reject: (ex: any) => void) => void)) {
         if (executor instanceof OnceObservable) {
@@ -579,11 +692,6 @@ export class OnceObservable<T> {
         }
 
         if (typeof executor !== "function") return;
-        let resolveH: Function, rejectH: Function;
-        this.promise = new Promise<T>((resolve, reject) => {
-            resolveH = resolve;
-            rejectH = reject;
-        });
         let process = (success: boolean, value: any) => {
             if (this._result.success !== undefined) return;
             let list: OccurModelContract<T>[];
@@ -601,17 +709,15 @@ export class OnceObservable<T> {
             delete this._result.rejected;
             if (!list) return;
             list.forEach(item => {
-                HitTask.debounce(() => {
+                HitTask.delay(() => {
                     item.h.call(item.thisArg, value);
                 }, item.delay);
             });
         };
         executor(value => {
             process(true, value);
-            if (typeof resolveH === "function") resolveH(value);
         }, err => {
             process(false, err);
-            if (typeof rejectH === "function") rejectH(err);
         });
     }
 
@@ -639,7 +745,7 @@ export class OnceObservable<T> {
     }
 
     public onResolvedLater(h: (value: T) => void, thisArg?: any, delay?: boolean | number) {
-        HitTask.debounce(() => {
+        HitTask.delay(() => {
             this.onResolved(h, thisArg, delay);
         }, true);
     }
@@ -656,13 +762,17 @@ export class OnceObservable<T> {
     }
 
     public onRejectedLater(h: (value: T) => void, thisArg?: any, delay?: boolean | number) {
-        HitTask.debounce(() => {
+        HitTask.delay(() => {
             this.onRejected(h, thisArg, delay);
         }, true);
     }
 
     public then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null) {
-        return this.promise.then(onfulfilled, onrejected);
+        return this.promise().then(onfulfilled, onrejected);
+    }
+
+    public catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null) {
+        return this.promise().catch(onrejected);
     }
 
     public createObservable() {

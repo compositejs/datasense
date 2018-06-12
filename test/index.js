@@ -1,8 +1,9 @@
-var Engine = require("./engine");
+const Engine = require("./engine");
 
-var ValueTest = require("./value");
-var PropsTest = require("./props");
-
-Engine.run(ValueTest, PropsTest);
+Engine.run(
+    require("./events"),
+    require("./value"),
+    require("./props")
+);
 
 module.exports = Engine.run;

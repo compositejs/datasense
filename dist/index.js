@@ -640,7 +640,6 @@ var DataSense;
          * @param firer  The handler to fire.
          */
         function EventObservable(firer, mapKey) {
-            var _this = this;
             var disposable = new DataSense.DisposableArray();
             var getKey = function (key) {
                 if (!mapKey || !key || typeof key !== "string")
@@ -710,69 +709,97 @@ var DataSense;
                 if (obj.isInvalid)
                     return;
                 var isInvalid = false;
-                if (obj.options.invalid) {
-                    if (obj.options.invalid === true) {
+                if (obj.invalid) {
+                    if (obj.invalid === true) {
                         isInvalid = true;
                     }
-                    else if (typeof obj.options.invalid === "number") {
-                        if (obj.options.invalid <= obj.count)
+                    else if (typeof obj.invalid === "number") {
+                        if (obj.invalid <= obj.count)
                             isInvalid = true;
                     }
-                    else if (typeof obj.options.invalid === "function") {
-                        isInvalid = obj.options.invalid(ev);
+                    else if (typeof obj.invalid === "function") {
+                        isInvalid = obj.invalid(ev);
                     }
                 }
                 if (isInvalid) {
                     obj.isInvalid = true;
                     removing.push({ key: !further ? key : null, value: obj });
-                    if (!obj.options.invalidForNextTime)
+                    if (!obj.invalidForNextTime)
                         return;
                 }
+                var latestFireDate = obj.latestFireDate;
+                var currentFireDate = obj.latestFireDate = new Date();
                 if (obj.count < Number.MAX_SAFE_INTEGER)
                     obj.count++;
                 var fireObj = typeof message === "string" ? { message: message } : (message || {});
                 var working = true;
-                DataSense.HitTask.debounce(function () {
-                    obj.h.forEach(function (h) {
-                        if (typeof h !== "function")
-                            return;
-                        h.call(obj.thisArg, ev, {
-                            get key() {
-                                return obj.key || key;
-                            },
-                            get originalKey() {
-                                return key;
-                            },
-                            get count() {
-                                return obj.count;
-                            },
-                            get fireDate() {
-                                return obj.latestFireDate;
-                            },
-                            get registerDate() {
-                                return obj.time;
-                            },
-                            get arg() {
-                                return obj.options.arg;
-                            },
-                            get message() {
-                                return fireObj.message;
-                            },
-                            get source() {
-                                return fireObj.source;
-                            },
-                            get additional() {
-                                return fireObj.data;
-                            },
-                            dispose: function () {
-                                if (working)
-                                    removing.push({ key: !further ? key : null, value: obj });
-                                else
-                                    remove(key, obj);
+                obj.task.process({
+                    ev: ev,
+                    c: {
+                        get key() {
+                            return obj.key || key;
+                        },
+                        get originalKey() {
+                            return key;
+                        },
+                        get count() {
+                            return obj.count;
+                        },
+                        get fireDate() {
+                            return currentFireDate;
+                        },
+                        get latestFireDate() {
+                            return latestFireDate;
+                        },
+                        get lastFireDate() {
+                            return obj.latestFireDate;
+                        },
+                        get registerDate() {
+                            return obj.time;
+                        },
+                        get arg() {
+                            return obj.arg;
+                        },
+                        get message() {
+                            return fireObj.message;
+                        },
+                        get source() {
+                            return fireObj.source;
+                        },
+                        get addition() {
+                            return fireObj.addition;
+                        },
+                        hasStoreData: function (propKey) {
+                            return obj.store.hasOwnProperty(propKey);
+                        },
+                        getStoreData: function (propKey) {
+                            return obj.store[propKey];
+                        },
+                        setStoreData: function (propKey, propValue) {
+                            obj.store[propKey] = propValue;
+                        },
+                        removeStoreData: function () {
+                            var propKey = [];
+                            for (var _i = 0; _i < arguments.length; _i++) {
+                                propKey[_i] = arguments[_i];
                             }
-                        });
-                    });
-                }, obj.options.delay);
+                            var deltaCount = 0;
+                            propKey.forEach(function (propKeyItem) {
+                                if (!propKeyItem || typeof propKeyItem !== "string")
+                                    return;
+                                deltaCount++;
+                                delete obj.store[propKeyItem];
+                            });
+                            return deltaCount;
+                        },
+                        dispose: function () {
+                            if (working)
+                                removing.push({ key: !further ? key : null, value: obj });
+                            else
+                                remove(key, obj);
+                        }
+                    }
+                });
                 working = false;
             };
             this._instance = {
@@ -813,21 +840,17 @@ var DataSense;
                                 clearTimeout(removingToken);
                                 return;
                             }
-                            obj.latestFireDate = new Date();
                             process(key, obj, ev, message, removing, true);
                             removingH();
                             return;
                         }
-                        obj.latestFireDate = new Date();
                         process(key, obj, ev, message, removing, false);
                     }
                     else {
                         store[key].forEach(function (item) {
-                            item.latestFireDate = new Date();
                             process(key, item, ev, message, removing, false);
                         });
                         furtherHandlers.forEach(function (item) {
-                            item.latestFireDate = new Date();
                             process(key, item, ev, message, removing, true);
                         });
                     }
@@ -847,8 +870,57 @@ var DataSense;
             };
             if (typeof firer !== "function")
                 return;
+            var implInstance = this._instance;
             firer(function (key, ev, message) {
-                _this._instance.fire(key, ev, message);
+                implInstance.fire(key, ev, message);
+            }, function (h, thisArg, options) {
+                if (!h)
+                    h = [];
+                if (!(h instanceof Array))
+                    h = [h];
+                if (!options)
+                    options = {};
+                var task = new DataSense.HitTask();
+                task.setOptions({
+                    delay: options.delay,
+                    mergeMode: options.mergeMode,
+                    span: options.span,
+                    minCount: options.minCount,
+                    maxCount: options.maxCount
+                });
+                task.pushHandler(function (ev) {
+                    h.forEach(function (handler) {
+                        if (typeof handler === "function")
+                            handler(ev.ev, ev.c);
+                    });
+                });
+                var obj = {
+                    task: task,
+                    arg: options.arg,
+                    thisArg: thisArg,
+                    invalid: options.invalid,
+                    invalidForNextTime: options.invalidForNextTime,
+                    time: new Date(),
+                    store: {},
+                    count: 0
+                };
+                implInstance.push(null, obj);
+                var result = {
+                    get count() {
+                        return obj.count;
+                    },
+                    get registerDate() {
+                        return obj.time;
+                    },
+                    fire: function (key, ev, message) {
+                        implInstance.fire(key, ev, message);
+                    },
+                    dispose: function () {
+                        implInstance.remove(null, obj);
+                    }
+                };
+                implInstance.pushDisposable(result);
+                return result;
             });
         }
         EventObservable.prototype.pushDisposable = function () {
@@ -882,7 +954,30 @@ var DataSense;
             }
             if (!options)
                 options = {};
-            var obj = { h: h, thisArg: thisArg, options: options, time: new Date(), count: 0 };
+            var task = new DataSense.HitTask();
+            task.setOptions({
+                delay: options.delay,
+                mergeMode: options.mergeMode,
+                span: options.span,
+                minCount: options.minCount,
+                maxCount: options.maxCount
+            });
+            task.pushHandler(function (ev) {
+                h.forEach(function (handler) {
+                    if (typeof handler === "function")
+                        handler(ev.ev, ev.c);
+                });
+            });
+            var obj = {
+                task: task,
+                arg: options.arg,
+                thisArg: thisArg,
+                invalid: options.invalid,
+                invalidForNextTime: options.invalidForNextTime,
+                time: new Date(),
+                store: {},
+                count: 0
+            };
             var implInstance = this._instance;
             implInstance.push(key, obj);
             var result = {
@@ -910,57 +1005,11 @@ var DataSense;
         EventObservable.prototype.once = function (key, h, thisArg) {
             return this.on(key, h, thisArg, { invalid: 1 });
         };
-        EventObservable.prototype.onAny = function (h, thisArg, options, disposableArray) {
-            if (!h)
-                h = [];
-            if (!(h instanceof Array))
-                h = [h];
-            if (!options)
-                options = {};
-            var obj = { h: h, thisArg: thisArg, options: options, time: new Date(), count: 0 };
-            var implInstance = this._instance;
-            implInstance.push(null, obj);
-            var result = {
-                get count() {
-                    return obj.count;
-                },
-                get registerDate() {
-                    return obj.time;
-                },
-                fire: function (key, ev, message) {
-                    implInstance.fire(key, ev, message);
-                },
-                dispose: function () {
-                    implInstance.remove(null, obj);
-                }
-            };
-            implInstance.pushDisposable(result);
-            if (disposableArray)
-                disposableArray.pushDisposable(result);
-            return result;
-        };
         EventObservable.prototype.clearOn = function (key) {
             this._instance.remove(key);
         };
         EventObservable.prototype.createSingleObservable = function (key) {
             return new SingleEventObservable(this, key);
-        };
-        EventObservable.prototype.subscribeAny = function (h, thisArg) {
-            var result;
-            if (typeof h !== "function") {
-                result = function () { };
-                result.dispose = function () { };
-                return result;
-            }
-            var dispose = this.onAny(function (ev) {
-                h.call(thisArg, ev);
-            });
-            this._instance.pushDisposable(dispose);
-            result = function () {
-                dispose.dispose();
-            };
-            result.dispose = dispose.dispose;
-            return result;
         };
         EventObservable.prototype.subscribeSingle = function (key, h, thisArg, convertor) {
             var result;
@@ -1009,6 +1058,20 @@ var DataSense;
             var result = function () { };
             result.dispose = function () { };
             return result;
+        };
+        EventObservable.createForElement = function (dom, eventType) {
+            var event = new EventController();
+            var listener = function (ev) {
+                event.fire(eventType, ev);
+            };
+            dom.addEventListener(eventType, listener);
+            var obs = event.createSingleObservable(eventType);
+            obs.pushDisposable({
+                dispose: function () {
+                    dom.removeEventListener(eventType, listener);
+                }
+            });
+            return obs;
         };
         return EventObservable;
     }());
@@ -1085,10 +1148,13 @@ var DataSense;
         function EventController() {
             var _this = this;
             var f;
-            _this = _super.call(this, function (fire) {
+            var o;
+            _this = _super.call(this, function (fire, onAny) {
                 f = fire;
+                o = onAny;
             }) || this;
             _this._fireHandler = f;
+            _this._onAny = o;
             return _this;
         }
         /**
@@ -1100,9 +1166,31 @@ var DataSense;
          */
         EventController.prototype.fire = function (key, ev, message, delay) {
             var _this = this;
-            DataSense.HitTask.debounce(function () {
+            DataSense.HitTask.delay(function () {
                 _this._fireHandler(key, ev, message);
             }, delay);
+        };
+        EventController.prototype.onAny = function (h, thisArg, options, disposableArray) {
+            var onResult = this._onAny(h, thisArg, options);
+            if (disposableArray && typeof disposableArray.pushDisposable === "function")
+                disposableArray.pushDisposable(onResult);
+            return onResult;
+        };
+        EventController.prototype.subscribeAny = function (h, thisArg) {
+            var result;
+            if (typeof h !== "function") {
+                result = function () { };
+                result.dispose = function () { };
+                return result;
+            }
+            var dispose = this.onAny(function (ev) {
+                h.call(thisArg, ev);
+            });
+            result = function () {
+                dispose.dispose();
+            };
+            result.dispose = dispose.dispose;
+            return result;
         };
         return EventController;
     }(EventObservable));
@@ -1120,11 +1208,6 @@ var DataSense;
             }
             if (typeof executor !== "function")
                 return;
-            var resolveH, rejectH;
-            this.promise = new Promise(function (resolve, reject) {
-                resolveH = resolve;
-                rejectH = reject;
-            });
             var process = function (success, value) {
                 if (_this._result.success !== undefined)
                     return;
@@ -1144,21 +1227,28 @@ var DataSense;
                 if (!list)
                     return;
                 list.forEach(function (item) {
-                    DataSense.HitTask.debounce(function () {
+                    DataSense.HitTask.delay(function () {
                         item.h.call(item.thisArg, value);
                     }, item.delay);
                 });
             };
             executor(function (value) {
                 process(true, value);
-                if (typeof resolveH === "function")
-                    resolveH(value);
             }, function (err) {
                 process(false, err);
-                if (typeof rejectH === "function")
-                    rejectH(err);
             });
         }
+        OnceObservable.prototype.promise = function () {
+            var resolveH;
+            var rejectH;
+            var p = new Promise(function (resolve, reject) {
+                resolveH = resolve;
+                rejectH = reject;
+            });
+            this.onResolved(resolveH);
+            this.onRejected(rejectH);
+            return p;
+        };
         OnceObservable.prototype.isPending = function () {
             return this._result.success === undefined;
         };
@@ -1181,7 +1271,7 @@ var DataSense;
         };
         OnceObservable.prototype.onResolvedLater = function (h, thisArg, delay) {
             var _this = this;
-            DataSense.HitTask.debounce(function () {
+            DataSense.HitTask.delay(function () {
                 _this.onResolved(h, thisArg, delay);
             }, true);
         };
@@ -1198,12 +1288,15 @@ var DataSense;
         };
         OnceObservable.prototype.onRejectedLater = function (h, thisArg, delay) {
             var _this = this;
-            DataSense.HitTask.debounce(function () {
+            DataSense.HitTask.delay(function () {
                 _this.onRejected(h, thisArg, delay);
             }, true);
         };
         OnceObservable.prototype.then = function (onfulfilled, onrejected) {
-            return this.promise.then(onfulfilled, onrejected);
+            return this.promise().then(onfulfilled, onrejected);
+        };
+        OnceObservable.prototype.catch = function (onrejected) {
+            return this.promise().catch(onrejected);
         };
         OnceObservable.prototype.createObservable = function () {
             return new OnceObservable(this);
@@ -2015,143 +2108,179 @@ var DataSense;
      */
     var HitTask = /** @class */ (function () {
         function HitTask() {
-        }
-        /**
-         * Processes a handler delay or immediately.
-         * @param h  The handler to process.
-         */
-        HitTask.process = function (h, options, justPrepare) {
+            var _this = this;
+            this._options = {};
+            this._h = [];
+            var initDate = new Date();
             var procToken;
             var count = 0;
             var curCount = 0;
             var latest;
-            if (!options)
-                options = {};
-            var procH = function () {
+            var latest2;
+            var procH = function (arg) {
                 procToken = null;
-                h();
+                var latest3 = latest;
                 latest = new Date();
-                count++;
+                if (count < Number.MAX_SAFE_INTEGER)
+                    count++;
+                _this._h.forEach(function (h) {
+                    h(arg, {
+                        initDate: initDate,
+                        processDate: latest,
+                        latestProcessDate: latest3,
+                        count: count,
+                        hitCount: curCount
+                    });
+                });
             };
-            var proc = function (totalCountLimit) {
-                if (totalCountLimit === true)
-                    totalCountLimit = 1;
-                if (typeof totalCountLimit === "number" && count >= totalCountLimit)
-                    return;
+            this._abort = function () {
+                if (procToken)
+                    clearTimeout(procToken);
+                procToken = null;
+            };
+            this._proc = function (arg) {
                 var now = new Date();
                 curCount++;
-                if (!latest || (now.getTime() - latest.getTime() > options.span)) {
+                var options = _this._options;
+                if (!options.span || !latest2 || (now.getTime() - latest2.getTime() > options.span)) {
                     curCount = 1;
                 }
-                else if (curCount < options.minCount || curCount > options.maxCount) {
+                latest2 = new Date();
+                if ((options.minCount != null && curCount < options.minCount) || (options.maxCount != null && curCount > options.maxCount)) {
                     return;
                 }
                 if (procToken) {
                     if (options.mergeMode === "debounce")
                         clearTimeout(procToken);
-                    else if (options.mergeMode === "respond")
+                    else if (options.mergeMode === "mono")
                         return;
                 }
                 if (options.delay == null || options.delay === false)
-                    procH();
+                    procH(arg);
                 else if (options.delay === true)
-                    procToken = setTimeout(procH, 0);
+                    procToken = setTimeout(function () {
+                        procH(arg);
+                    }, 0);
                 else if (typeof options.delay === "number")
-                    procToken = setTimeout(procH, options.delay);
+                    procToken = setTimeout(function () {
+                        procH(arg);
+                    }, options.delay);
             };
-            if (!justPrepare)
-                proc();
+        }
+        HitTask.prototype.setOptions = function (value) {
+            this._options = value || {};
+        };
+        HitTask.prototype.pushHandler = function () {
+            var _this = this;
+            var h = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                h[_i] = arguments[_i];
+            }
+            var count = 0;
+            h.forEach(function (handler) {
+                var _a;
+                if (typeof handler === "function")
+                    count += _this._h.push(handler);
+                else if (handler instanceof Array)
+                    count += (_a = _this._h).push.apply(_a, handler);
+            });
+            return count;
+        };
+        HitTask.prototype.clearHandler = function () {
+            this._h = [];
+        };
+        HitTask.prototype.process = function (arg) {
+            this._proc(arg);
+        };
+        HitTask.prototype.abort = function () {
+            this._abort();
+        };
+        HitTask.delay = function (h, span, justPrepare) {
+            var procToken;
+            if (span == null || span === false)
+                h();
+            else if (span === true)
+                procToken = setTimeout(function () {
+                    procToken = null;
+                    h();
+                }, 0);
+            else if (typeof span === "number")
+                procToken = setTimeout(function () {
+                    procToken = null;
+                    h();
+                }, span);
             return {
-                process: proc,
-                processNow: function () {
-                    if (procToken)
-                        clearTimeout(procToken);
-                    procH();
-                },
-                get delay() {
-                    if (options.delay === false)
-                        return undefined;
-                    return options.delay === true ? 0 : options.delay;
-                },
-                set delay(value) {
-                    options.delay = value;
-                },
-                get isPending() {
-                    return !!procToken;
-                },
-                get latestDate() {
-                    return latest;
-                },
-                get count() {
-                    return count;
-                },
                 dispose: function () {
                     if (procToken)
                         clearTimeout(procToken);
+                    procToken = null;
                 }
             };
         };
+        HitTask.throttle = function (h, span, justPrepare) {
+            var task = new HitTask();
+            task.setOptions({
+                span: span,
+                maxCount: 1
+            });
+            task.pushHandler(h);
+            if (!justPrepare)
+                task.process();
+            return task;
+        };
         /**
-         * Processes a handler delay or immediately.
+         * Processes a handler delay or immediately in debounce mode.
          * @param h  The handler to process.
          * @param delay  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
          * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
          */
         HitTask.debounce = function (h, delay, justPrepare) {
-            var procToken;
-            var count = 0;
-            var latest;
-            var procH = function () {
-                procToken = null;
-                h();
-                latest = new Date();
-                count++;
-            };
-            var proc = function (maxCount) {
-                if (maxCount === true)
-                    maxCount = 1;
-                if (typeof maxCount === "number" && count >= maxCount)
-                    return;
-                if (procToken)
-                    clearTimeout(procToken);
-                if (delay == null || delay === false)
-                    procH();
-                else if (delay === true)
-                    procToken = setTimeout(procH, 0);
-                else if (typeof delay === "number")
-                    procToken = setTimeout(procH, delay);
-            };
+            var task = new HitTask();
+            task.setOptions({
+                delay: delay,
+                mergeMode: "debounce"
+            });
+            task.pushHandler(h);
             if (!justPrepare)
-                proc();
-            return {
-                process: proc,
-                processNow: function () {
-                    if (procToken)
-                        clearTimeout(procToken);
-                    procH();
-                },
-                get delay() {
-                    if (delay === false)
-                        return undefined;
-                    return delay === true ? 0 : delay;
-                },
-                set delay(value) {
-                    delay = value;
-                },
-                get isPending() {
-                    return !!procToken;
-                },
-                get latestDate() {
-                    return latest;
-                },
-                get count() {
-                    return count;
-                },
-                dispose: function () {
-                    if (procToken)
-                        clearTimeout(procToken);
-                }
-            };
+                task.process();
+            return task;
+        };
+        /**
+         * Processes a handler delay or immediately in mono mode.
+         * @param h  The handler to process.
+         * @param delay  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
+         * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+         */
+        HitTask.mono = function (h, delay, justPrepare) {
+            var task = new HitTask();
+            task.setOptions({
+                delay: delay,
+                mergeMode: "mono"
+            });
+            task.pushHandler(h);
+            if (!justPrepare)
+                task.process();
+            return task;
+        };
+        /**
+         * Processes a handler in multiple hits task.
+         * @param h  The handler to process.
+         * @param min  The minimum hit count.
+         * @param max  The maximum hit count.
+         * @param span  The hit reset span.
+         * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+         */
+        HitTask.multiHit = function (h, minCount, maxCount, span, justPrepare) {
+            var task = new HitTask();
+            task.setOptions({
+                minCount: minCount,
+                maxCount: maxCount,
+                span: span
+            });
+            task.pushHandler(h);
+            if (!justPrepare)
+                task.process();
+            return task;
         };
         return HitTask;
     }());

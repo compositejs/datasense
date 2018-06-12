@@ -1,7 +1,7 @@
-var Engine = require("./engine");
-var DataSense = require("../index.js");
-let { create, assert } = Engine;
-let testCase = create("Value observable");
+const Engine = require("./engine");
+const DataSense = require("../index.js");
+const { create, assert } = Engine;
+const testCase = create("Value observable");
 
 testCase.add("Access", () => {
     let value = new DataSense.ValueController();

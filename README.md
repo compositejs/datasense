@@ -2,184 +2,29 @@
 
 A JavaScript library of observable, events and advanced model.
 
+## Installation and Usage
+
+You can install this by npm.
+
+```
+npm install datasense
+```
+
+And you can also insert the JavaScript bundled file by script tag into your web page directly.
+
+[Click here](./docs/installation.md) to read more.
+
 ## Features
 
-### Event
+DataSense provides lots of powerful low-level APIs for the management of observable, events and tasks. You can build your business logic apps or technical libraries based on this, including one/two-way-bindings, observing, subscript management and time sequence controlling.
 
-Event controller is used to let you have full control to add listeners and raise events with lots of useful options. An observable class related is used to add listeners only.
+Following are the key features that you can click to read more. The samples are written by Type Script by default in these documents.
 
-Following is an sample.
+- [Task](./docs/task.md) - A way to control how process a given handler including debounce, throttle, multiple hits, etc.
+- [Event](./docs/event.md) - A place to add event listeners and raise events with additional information and utilities supports, such as the one the tasks provided.
+- [Value](./docs/value.md) - The controller and observable for a variable so that you can access it and subscribe its changing.
+- [Props](./docs/props.md) - The controller and observable for a set of variables with keys. They are like the property of an object. You can access and observe them.
 
-```typescript
-import { EventController } from 'datasense';
+## Readme in other languages
 
-// Create an instance of event controller so that you can on and fire events.
-var events = new EventController();
-
-// Add event listener.
-events.on("click", (ev, listenerController) => {
-    console.info("Clicked!", ev);
-
-    // You can access the controller for current event listener for status and actions.
-    // For example, we can off this listener after 3 times raised.
-    if (listenerController.count > 3)
-        listener.dispose();
-});
-```
-
-For above sample, we can also use following way to implement.
-
-```typescript
-events.on("click", (ev, listenerController) => {
-    console.info("Clicked!", ev);
-}, {
-    invalid: 3
-});
-```
-
-The result of `on` has a number of properties and methods to get the key, fire manually, dispose, etc.
-
-You can fire it anywhere.
-
-```typescript
-events.fire("click", "Test only");
-```
-
-And you can create an observable instance which is used for adding listeners with lots of useful options only so that you can send this object to other places.
-
-```typescipt
-let eventObs = events.createObservable();
-```
-
-### Value
-
-Value controller is used to manage a value with full control of accessing and observing. Value observable is the observable model of the controller which has no setting ability.
-
-```typescript
-import { ValueController } from 'datasense';
-
-// Create a value controller.
-let value = new ValueController<string>();
-
-// Set value.
-value.set("Morning!");
-
-// Get value.
-console.info(value.get());
-```
-
-You can customize the formatter and validator for the value. Following are samples.
-
-```typescript
-// Convert the value to string.
-value.formatter = newValue => (newValue || "").toString();
-
-// Make sure the value is not empty, null or undefined.
-value.validator = newValue => !!newValue;
-```
-
-And you can add event listener or subscribe for changes.
-
-```typescript
-// Add event listener on changed.
-value.onChanged((ev, listenerController) => {
-    console.info(`The new value of ${listenerController.key} is ${ev.value} and old value is ${ev.oldValue}, it changes ${listenerController.count} times.`);
-});
-
-// Subscribe new value.
-value.subscribe(newValue => {
-    console.info(`The new value is ${newValue}.`);
-});
-
-// Add event listener when changing.
-value.onChanging(ev => {
-    console.info(`Change to ${ev.valueRequest}.`);
-
-    // And we can set a callback when done.
-    ev.observable.onResolved(newValue => {
-        console.info(`New value is ${newValue}`);
-    });
-
-    // And also for failure.
-    ev.observable.onRejected(newValue => {
-        console.info(`New value is ${newValue}`);
-    });
-});
-```
-
-You can create an observable instance.
-
-```typescript
-let valueObs = value.createObservable();
-valueObs.onChanged(ev => {});
-
-// All event listener and subscriber will be diposed if dispose this instance.
-valueObs.dispose();
-```
-
-### Object
-
-You can manage a set of value controller/observable instance by props controller/observable. You can access them by key just like the way about accessing property of object but with observable ability.
-
-```typescript
-import { PropsController } from 'datasense';
-
-// Create an instance.
-let props = new PropsController();
-
-// Access property.
-props.setProp("name", "Kingcean");
-props.setProp("gender", "male");
-console.info(props.getProp("name"));
-console.info(`There is ${props.hasProp("birthday") ? "no " : ""} property of birthday registered here.`);
-
-// Add event listeners or subscribe.
-props.onPropChanged("name", ev => {});
-props.onPropChanging("name", ev => {});
-props.subscribeProp("name", newValue => {});
-```
-
-You can set props in a batch.
-
-```typescript
-props.setProps({
-    name: "Lily",
-    gender: "female"
-});
-console.info(props.getProp("name"));
-```
-
-You can get all property keys by calling `getKeys` method. And you can get a copy of this into an object. This object has no binding relationship with the original instance so that there is no change of original instance if you set property of this object.
-
-```typescript
-let modelCopy = props.copyModel();
-modelCopy.name = "Kingcean";
-console.info(`You may still see Lily here - ${props.getProp("name")}.`)
-```
-
-But you can get proxy by `proxy` property which has two-way bingding with the original instance.
-
-You can define some actions so that you can just send the request to do what you expect.
-
-```typescript
-props.registerRequestHandler("taller", (acc, data) => {
-    let height = props.proxy.height;
-    if (height == null) height = 100;
-    if (data == null) data = 1;
-    props.proxy.height += data;
-});
-props.sendRequest("taller", 70);
-console.info(props.getProp("height") + "cm"); // 170cm
-```
-
-And of course, you can create an observable instance without setter.
-
-```typescript
-let propsObs = props.createObservable();
-valueObs.onPropChanged("name", ev => {});
-
-// All event listener and subscriber will be diposed if dispose this instance.
-valueObs.dispose();
-```
-
-See test cases for more. Enjoy!
+- [简体中文](./docs/shuoming.md)

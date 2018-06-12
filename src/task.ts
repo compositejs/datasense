@@ -1,8 +1,16 @@
 namespace DataSense {
 
+export type HitTaskHandlerContract = (arg: any, ev: {
+    initDate: Date,
+    processDate: Date,
+    latestProcessDate: Date,
+    count: number,
+    hitCount: number
+}) => void;
+
 export interface HitTaskOptionsContract {
     delay?: number | boolean;
-    mergeMode?: "debounce" | "none" | "respond"
+    mergeMode?: "debounce" | "none" | "mono";
     span?: number;
     minCount?: number;
     maxCount?: number;
@@ -13,128 +21,178 @@ export interface HitTaskOptionsContract {
  */
 export class HitTask {
 
-    /**
-     * Processes a handler delay or immediately.
-     * @param h  The handler to process.
-     */
-    public static process(h: Function, options: HitTaskOptionsContract, justPrepare?: boolean) {
+    private _proc: (arg?: any) => void;
+    private _abort: () => void;
+    private _options: HitTaskOptionsContract = {};
+    private _h: HitTaskHandlerContract[] = [];
+
+    constructor() {
+        let initDate = new Date();
         let procToken: any;
         let count = 0;
         let curCount = 0;
         let latest: Date;
-        if (!options) options = {};
-        let procH = () => {
+        let latest2: Date;
+        let procH = (arg?: any) => {
             procToken = null;
-            h();
+            let latest3 = latest;
             latest = new Date();
-            count++;
+            if (count < Number.MAX_SAFE_INTEGER) count++;
+            this._h.forEach(h => {
+                h(arg, {
+                    initDate,
+                    processDate: latest,
+                    latestProcessDate: latest3,
+                    count,
+                    hitCount: curCount
+                });
+            });
         };
-        let proc = (totalCountLimit?: number | boolean) => {
-            if (totalCountLimit === true) totalCountLimit = 1;
-            if (typeof totalCountLimit === "number" && count >= totalCountLimit) return;
+        this._abort = () => {
+            if (procToken) clearTimeout(procToken);
+            procToken = null;
+        };
+        this._proc = (arg?) => {
             var now = new Date();
             curCount++;
-            if (!latest || (now.getTime() - latest.getTime() > options.span)) {
+            let options = this._options;
+            if (!options.span || !latest2 || (now.getTime() - latest2.getTime() > options.span)) {
                 curCount = 1;
-            } else if (curCount < options.minCount || curCount > options.maxCount) {
+            }
+
+            latest2 = new Date();
+            if ((options.minCount != null && curCount < options.minCount) || (options.maxCount != null && curCount > options.maxCount)) {
                 return;
             }
 
             if (procToken) {
                 if (options.mergeMode === "debounce") clearTimeout(procToken);
-                else if (options.mergeMode === "respond") return;
+                else if (options.mergeMode === "mono") return;
             }
 
             if (options.delay == null || options.delay === false)
-                procH();
+                procH(arg);
             else if (options.delay === true)
-                procToken = setTimeout(procH, 0);
+                procToken = setTimeout(() => {
+                    procH(arg);
+                }, 0);
             else if (typeof options.delay === "number")
-                procToken = setTimeout(procH, options.delay);
+                procToken = setTimeout(() => {
+                    procH(arg);
+                }, options.delay);
         };
-        if (!justPrepare) proc();
+    }
+
+    public setOptions(value: HitTaskOptionsContract) {
+        this._options = value || {};
+    }
+
+    public pushHandler(...h: (HitTaskHandlerContract | HitTaskHandlerContract[])[]) {
+        let count = 0;
+        h.forEach(handler => {
+            if (typeof handler === "function") count += this._h.push(handler);
+            else if (handler instanceof Array) count += this._h.push(...handler);
+        });
+        return count;
+    }
+
+    public clearHandler() {
+        this._h = [];
+    }
+
+    public process(arg?: any) {
+        this._proc(arg);
+    }
+
+    public abort() {
+        this._abort();
+    }
+
+    public static delay(h: Function, span: number | boolean, justPrepare?: boolean) {
+        let procToken: any;
+        if (span == null || span === false)
+            h();
+        else if (span === true)
+            procToken = setTimeout(() => {
+                procToken = null;
+                h();
+            }, 0);
+        else if (typeof span === "number")
+            procToken = setTimeout(() => {
+                procToken = null;
+                h();
+            }, span);
         return {
-            process: proc,
-            processNow() {
-                if (procToken) clearTimeout(procToken);
-                procH();
-            },
-            get delay() {
-                if (options.delay === false) return undefined;
-                return options.delay === true ? 0 : options.delay;
-            },
-            set delay(value: number | boolean) {
-                options.delay = value;
-            },
-            get isPending() {
-                return !!procToken;
-            },
-            get latestDate() {
-                return latest;
-            },
-            get count() {
-                return count;
-            },
             dispose() {
                 if (procToken) clearTimeout(procToken);
+                procToken = null;
             }
         }
     }
 
+    public static throttle(h: HitTaskHandlerContract | HitTaskHandlerContract[], span: number, justPrepare?: boolean) {
+        let task = new HitTask();
+        task.setOptions({
+            span,
+            maxCount: 1
+        });
+        task.pushHandler(h);
+        if (!justPrepare) task.process();
+        return task;
+    }
+
     /**
-     * Processes a handler delay or immediately.
+     * Processes a handler delay or immediately in debounce mode.
      * @param h  The handler to process.
      * @param delay  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
      * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
      */
-    public static debounce(h: Function, delay: number | boolean, justPrepare?: boolean) {
-        let procToken: any;
-        let count = 0;
-        let latest: Date;
-        let procH = () => {
-            procToken = null;
-            h();
-            latest = new Date();
-            count++;
-        };
-        let proc = (maxCount?: number | boolean) => {
-            if (maxCount === true) maxCount = 1;
-            if (typeof maxCount === "number" && count >= maxCount) return;
-            if (procToken) clearTimeout(procToken);
-            if (delay == null || delay === false)
-                procH();
-            else if (delay === true)
-                procToken = setTimeout(procH, 0);
-            else if (typeof delay === "number")
-                procToken = setTimeout(procH, delay);
-        };
-        if (!justPrepare) proc();
-        return {
-            process: proc,
-            processNow() {
-                if (procToken) clearTimeout(procToken);
-                procH();
-            },
-            get delay() {
-                if (delay === false) return undefined;
-                return delay === true ? 0 : delay;
-            },
-            set delay(value: number | boolean) {
-                delay = value;
-            },
-            get isPending() {
-                return !!procToken;
-            },
-            get latestDate() {
-                return latest;
-            },
-            get count() {
-                return count;
-            },
-            dispose() {
-                if (procToken) clearTimeout(procToken);
-            }
-        }
+    public static debounce(h: HitTaskHandlerContract | HitTaskHandlerContract[], delay: number | boolean, justPrepare?: boolean) {
+        let task = new HitTask();
+        task.setOptions({
+            delay,
+            mergeMode: "debounce"
+        });
+        task.pushHandler(h);
+        if (!justPrepare) task.process();
+        return task;
+    }
+
+    /**
+     * Processes a handler delay or immediately in mono mode.
+     * @param h  The handler to process.
+     * @param delay  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
+     * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+     */
+    public static mono(h: HitTaskHandlerContract | HitTaskHandlerContract[], delay: number | boolean, justPrepare?: boolean) {
+        let task = new HitTask();
+        task.setOptions({
+            delay,
+            mergeMode: "mono"
+        });
+        task.pushHandler(h);
+        if (!justPrepare) task.process();
+        return task;
+    }
+
+    /**
+     * Processes a handler in multiple hits task.
+     * @param h  The handler to process.
+     * @param min  The minimum hit count.
+     * @param max  The maximum hit count.
+     * @param span  The hit reset span.
+     * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+     */
+    public static multiHit(h: HitTaskHandlerContract | HitTaskHandlerContract[], minCount: number, maxCount: number, span: number, justPrepare?: boolean) {
+        let task = new HitTask();
+        task.setOptions({
+            minCount,
+            maxCount,
+            span
+        });
+        task.pushHandler(h);
+        if (!justPrepare) task.process();
+        return task;
     }
 }
 

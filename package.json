@@ -1,6 +1,6 @@
 {
   "name": "datasense",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A set of powerful utilities and classes for accessing and observing data.",
   "main": "index.js",
   "types": "./dist/index.d.ts",
