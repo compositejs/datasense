@@ -3,7 +3,7 @@ You can install this web front-end library by npm or by downloading the bundle f
 ## ES6 / Type Script via npm
 
 ```
-npm install datasense
+npm i datasense
 ```
 
 Then you can import the ones you needed by patching. Following is a sample.

@@ -193,6 +193,10 @@ export class ValueObservable<T> implements DisposableArrayContract {
         });
     }
 
+    /**
+     * Adds disposable objects so that they will be disposed when this instance is disposed.
+     * @param items  The objects to add.
+     */
     public pushDisposable(...items: DisposableContract[]) {
         return this._instance.pushDisposable(...items);
     }
@@ -205,14 +209,14 @@ export class ValueObservable<T> implements DisposableArrayContract {
     }
 
     /**
-     * Gets the value.
+     * Gets the type of value.
      */
     public getType() {
         return typeof this._instance.get();
     }
 
     /**
-     * Gets the value.
+     * Checks if the value is instance of a specific type.
      */
     public instanceOf(c: any) {
         return this._instance.get() instanceof c;
@@ -226,6 +230,13 @@ export class ValueObservable<T> implements DisposableArrayContract {
         return this._instance.clearFlows();
     }
 
+    /**
+     * Registers an event listener on the value is changing.
+     * @param h  The handler or handlers of the event listener.
+     * @param thisArg  this arg.
+     * @param options  The event listener options.
+     * @param disposableArray  An additional disposable array instance for push current event handler.
+     */
     public onChanging(
         h: EventHandlerContract<ChangingInfo<T>> | EventHandlerContract<ChangingInfo<T>>[],
         thisArg?: any,
@@ -235,6 +246,13 @@ export class ValueObservable<T> implements DisposableArrayContract {
         return this.changing.on(h, thisArg, options, disposableArray);
     }
 
+    /**
+     * Registers an event listener on the value has been changed.
+     * @param h  The handler or handlers of the event listener.
+     * @param thisArg  this arg.
+     * @param options  The event listener options.
+     * @param disposableArray  An additional disposable array instance for push current event handler.
+     */
     public onChanged(
         h: EventHandlerContract<ChangedInfo<T>> | EventHandlerContract<ChangedInfo<T>>[],
         thisArg?: any,
@@ -244,6 +262,13 @@ export class ValueObservable<T> implements DisposableArrayContract {
         return this.changed.on(h, thisArg, options, disposableArray);
     }
 
+    /**
+     * Registers an event listener on the value is failed to change.
+     * @param h  The handler or handlers of the event listener.
+     * @param thisArg  this arg.
+     * @param options  The event listener options.
+     * @param disposableArray  An additional disposable array instance for push current event handler.
+     */
     public onChangeFailed(
         h: EventHandlerContract<ChangedInfo<T>> | EventHandlerContract<ChangedInfo<T>>[],
         thisArg?: any,
@@ -253,6 +278,13 @@ export class ValueObservable<T> implements DisposableArrayContract {
         return this.changeFailed.on(h, thisArg, options, disposableArray);
     }
 
+    /**
+     * Registers an event listener on a broadcast message is received.
+     * @param h  The handler or handlers of the event listener.
+     * @param thisArg  this arg.
+     * @param options  The event listener options.
+     * @param disposableArray  An additional disposable array instance for push current event handler.
+     */
     public onBroadcastReceived(
         h: EventHandlerContract<any> | EventHandlerContract<any>[],
         thisArg?: any,
@@ -262,6 +294,13 @@ export class ValueObservable<T> implements DisposableArrayContract {
         return this.broadcastReceived.on(h, thisArg, options, disposableArray);
     }
 
+    /**
+     * Registers an event listener on a notification is received.
+     * @param h  The handler or handlers of the event listener.
+     * @param thisArg  this arg.
+     * @param options  The event listener options.
+     * @param disposableArray  An additional disposable array instance for push current event handler.
+     */
     public onNotifyReceived(
         h: EventHandlerContract<any> | EventHandlerContract<any>[],
         thisArg?: any,
@@ -271,19 +310,29 @@ export class ValueObservable<T> implements DisposableArrayContract {
         return this.notifyReceived.on(h, thisArg, options, disposableArray);
     }
 
+    /**
+     * Subscribes for what the value has been changed.
+     * @param h  The callback.
+     * @param thisArg  this arg.
+     */
     public subscribe(h: (newValue: T) => void, thisArg?: any): SubscriberCompatibleResultContract {
         return this.changed.subscribeWithConvertor<T>(h, thisArg, newValue => newValue.value);
     }
 
     /**
      * Sends a request message.
-     * @param type  The request type.
-     * @param value  The data.
+     * @param data  The data.
+     * @param message  The additional information.
      */
     public sendRequest(type: string, value: any) {
         this._instance.sendRequest(type, value);
     }
 
+    /**
+     * Sends a broadcast message.
+     * @param data  The data.
+     * @param message  The additional information which will pass to the event listener handler.
+     */
     public sendBroadcast(data: any, message?: FireInfoContract | string) {
         this._instance.sendBroadcast(data, message);
     }
@@ -316,6 +365,9 @@ export class ValueClient<T> extends ValueObservable<T> {
     private readonly _sendNotify: (data: any, message?: FireInfoContract | string) => void;
     private readonly _registerRequestHandler: (type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) => boolean;
 
+    /**
+     * Initializes a new instance of the ValueClient class.
+     */
     constructor(
         defaultValue: T,
         modifier: (setter: ValueModifierContract<T>) => void,
@@ -336,29 +388,56 @@ export class ValueClient<T> extends ValueObservable<T> {
         if (typeof registerRequestHandler === "function") this._registerRequestHandler = registerRequestHandler;
     }
 
+    /**
+     * Sets value.
+     * @param value  The value of the property to set.
+     * @param message  A message for the setting event.
+     */
     public set(value: T, message?: FireInfoContract | string): boolean {
         if (typeof this._setter !== "function") return false;
         let info = this._setter(value, message)
         return info ? info.success : false;
     }
 
+    /**
+     * Sets the value. A status and further information will be returned.
+     * @param value  The value of the property to set.
+     * @param message  A message for the setting event.
+     */
     public setForDetails(value: T, message?: FireInfoContract | string): ChangedInfo<T> {
         if (typeof this._setter !== "function") return ChangedInfo.fail(null, undefined, value, "not implemented");
         return this._setter(value, message);
     }
 
+    /**
+     * Sets a value by a Promise.
+     * @param value  A Promise of the property to set.
+     * @param compatible  true if the value can also be a non-Promise; otherwise, false.
+     * @param message  A message for the setting event.
+     */
     public setPromise(value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
         return Access.setPromise((value, message?) => {
             return this.setForDetails(value, message);
         }, value, compatible, message);
     }
 
+    /**
+     * Sets a value by an observable which can be subscribed.
+     * @param value  A Promise of the property to set.
+     * @param message  A message for the setting event.
+     * @param callbackfn  A function will be called on subscribed.
+     */
     public setSubscribe(value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
         return Access.setSubscribe((value, message?) => {
             return this.setForDetails(value, message);
         }, value, message, callbackfn, thisArg);
     }
 
+    /**
+     * Send a notification.
+     * @param data  The data.
+     * @param message  A message for the setting event.
+     */
     public sendNotify(data: any, message?: FireInfoContract | string) {
         this._sendNotify(data, message);
     }
@@ -381,22 +460,37 @@ export class ValueController<T> extends ValueObservable<T> {
     private _accessor: ValueObservableAccessorContract<T>;
     private _observing: ChangeFlowRegisteredContract;
 
+    /**
+     * Gets the formatter/convertor.
+     */
     public get formatter() {
         return this._accessor.getFormatter();
     }
 
+    /**
+     * Sets the formatter/convertor.
+     */
     public set formatter(h) {
         this._accessor.setFormatter(h);
     }
 
+    /**
+     * Gets the validator.
+     */
     public get validator() {
         return this._accessor.getValidator();
     }
 
+    /**
+     * Sets the validator.
+     */
     public set validator(h) {
         this._accessor.setValidator(h);
     }
 
+    /**
+     * Initializes a new instance of the ValueController class.
+     */
     constructor() {
         let a: ValueObservableAccessorContract<T>;
         super(acc => a = acc);
@@ -422,12 +516,24 @@ export class ValueController<T> extends ValueObservable<T> {
         return this._accessor.set(value, message);
     }
 
+    /**
+     * Sets a value by a Promise.
+     * @param value  A Promise of the property to set.
+     * @param compatible  true if the value can also be a non-Promise; otherwise, false.
+     * @param message  A message for the setting event.
+     */
     public setPromise(value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
         return Access.setPromise((value, message?) => {
             return this.setForDetails(value, message);
         }, value, compatible, message);
     }
 
+    /**
+     * Sets a value by an observable which can be subscribed.
+     * @param value  A Promise of the property to set.
+     * @param message  A message for the setting event.
+     * @param callbackfn  A function will be called on subscribed.
+     */
     public setSubscribe(value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
         return Access.setSubscribe((value, message?) => {
             return this.setForDetails(value, message);
@@ -469,6 +575,9 @@ export class ValueController<T> extends ValueObservable<T> {
         return !!this._observing;
     }
 
+    /**
+     * Creates a controller client.
+     */
     public createClient() {
         let token: DisposableContract;
         var sendRequest = (type: string, value: any) => {
@@ -501,6 +610,11 @@ export class ValueController<T> extends ValueObservable<T> {
         return client;
     }
 
+    /**
+     * Send a notification.
+     * @param data  The data.
+     * @param message  The additional information which will pass to the event listener handler.
+     */
     public sendNotify(data: any, message?: FireInfoContract | string) {
         this._accessor.sendNotify(data, message);
     }

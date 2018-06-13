@@ -1,5 +1,12 @@
 namespace DataSense {
+
+/**
+ * Disposable instance.
+ */
 export interface DisposableContract {
+    /**
+     * Disposes the instance.
+     */
     dispose(): void;
 }
 
@@ -16,7 +23,14 @@ export interface SubscriberContract<T> {
     subscribe(h: (value: T) => void): SubscriberResultContract;
 }
 
+/**
+ * Disposable container.
+ */
 export interface DisposableArrayContract extends DisposableContract {
+    /**
+     * Adds disposable objects so that they will be disposed when this instance is disposed.
+     * @param items  The objects to add.
+     */
     pushDisposable(...items: DisposableContract[]): number;
 }
 

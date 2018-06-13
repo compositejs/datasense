@@ -7,7 +7,7 @@ A JavaScript library of observable, events and advanced model.
 You can install this by npm.
 
 ```
-npm install datasense
+npm i datasense
 ```
 
 And you can also insert the JavaScript bundled file by script tag into your web page directly.

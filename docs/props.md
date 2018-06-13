@@ -61,7 +61,9 @@ The readonly property `propsChanged` is the observable instance for proeprty cha
 
 ## Data model
 
-You can get all property keys by calling `getKeys` method. And you can get a copy of this into an object. This object has no binding relationship with the original instance so that there is no change in original instance if you set a property in this object. Following is an example.
+You can get all property keys by calling `getKeys` method.
+
+And you can get a copy of this into an object. This object has no binding relationship with the original instance so that there is no change in original instance if you set a property in this object. Following is an example.
 
 ```typescript
 let modelCopy = props.copyModel();
@@ -69,7 +71,7 @@ modelCopy.name = "Kingcean";
 console.info(`You may still see Lily here - ${props.getProp("name")}.`)
 ```
 
-But you can get proxy by `proxy` property which has two-way bingding with the original instance.
+But you can get the proxy by `proxy` property which has two-way bingding with the original instance.
 
 ## Actions store
 

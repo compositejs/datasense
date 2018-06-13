@@ -261,6 +261,10 @@ export class PropsObservable implements DisposableArrayContract {
         changer(obj.accessor);
     }
 
+    /**
+     * Adds disposable objects so that they will be disposed when this instance is disposed.
+     * @param items  The objects to add.
+     */
     public pushDisposable(...items: DisposableContract[]) {
         return this._instance.pushDisposable(...items);
     }
@@ -296,6 +300,14 @@ export class PropsObservable implements DisposableArrayContract {
         return this._instance.clearFlows(key);
     }
 
+    /**
+     * Registers an event listener on the speicific property is changing.
+     * @param key  The property key.
+     * @param h  The handler or handlers of the event listener.
+     * @param thisArg  this arg.
+     * @param options  The event listener options.
+     * @param disposableArray  An additional disposable array instance for push current event handler.
+     */
     public onPropChanging<T>(
         key: string,
         h: EventHandlerContract<ChangingInfo<T>> | EventHandlerContract<ChangingInfo<T>>[],
@@ -306,6 +318,14 @@ export class PropsObservable implements DisposableArrayContract {
         return this.propChanging.on(key, h, thisArg, options, disposableArray);
     }
 
+    /**
+     * Registers an event listener on the speicific property has been changed.
+     * @param key  The property key.
+     * @param h  The handler or handlers of the event listener.
+     * @param thisArg  this arg.
+     * @param options  The event listener options.
+     * @param disposableArray  An additional disposable array instance for push current event handler.
+     */
     public onPropChanged<T>(
         key: string,
         h: EventHandlerContract<ChangedInfo<T>> | EventHandlerContract<ChangedInfo<T>>[],
@@ -316,6 +336,14 @@ export class PropsObservable implements DisposableArrayContract {
         return this.propChanged.on(key, h, thisArg, options, disposableArray);
     }
 
+    /**
+     * Registers an event listener on the speicific property is failed to change.
+     * @param key  The property key.
+     * @param h  The handler or handlers of the event listener.
+     * @param thisArg  this arg.
+     * @param options  The event listener options.
+     * @param disposableArray  An additional disposable array instance for push current event handler.
+     */
     public onPropChangeFailed<T>(
         key: string,
         h: EventHandlerContract<ChangedInfo<T>> | EventHandlerContract<ChangedInfo<T>>[],
@@ -354,6 +382,13 @@ export class PropsObservable implements DisposableArrayContract {
         return this.anyPropChangeFailed.on(h, thisArg, options, disposableArray);
     }
 
+    /**
+     * Registers an event listener on one or more properties have been changed.
+     * @param h  The handler or handlers of the event listener.
+     * @param thisArg  this arg.
+     * @param options  The event listener options.
+     * @param disposableArray  An additional disposable array instance for push current event handler.
+     */
     public onPropsChanged(
         h: EventHandlerContract<ChangedInfoSetContract> | EventHandlerContract<ChangedInfoSetContract>[],
         thisArg?: any,
@@ -363,6 +398,14 @@ export class PropsObservable implements DisposableArrayContract {
         return this.propsChanged.on(h, thisArg, options, disposableArray);
     }
 
+    /**
+     * Registers an event listener on a broadcast message of a specific property is received.
+     * @param key  The property key.
+     * @param h  The handler or handlers of the event listener.
+     * @param thisArg  this arg.
+     * @param options  The event listener options.
+     * @param disposableArray  An additional disposable array instance for push current event handler.
+     */
     public onPropBroadcastReceived(
         key: string,
         h: EventHandlerContract<any> | EventHandlerContract<any>[],
@@ -373,6 +416,13 @@ export class PropsObservable implements DisposableArrayContract {
         return this.propBroadcastReceived.on(key, h, thisArg, options, disposableArray);
     }
 
+    /**
+     * Registers an event listener on a broadcast message is received.
+     * @param h  The handler or handlers of the event listener.
+     * @param thisArg  this arg.
+     * @param options  The event listener options.
+     * @param disposableArray  An additional disposable array instance for push current event handler.
+     */
     public onBroadcastReceived(
         h: EventHandlerContract<any> | EventHandlerContract<any>[],
         thisArg?: any,
@@ -382,6 +432,14 @@ export class PropsObservable implements DisposableArrayContract {
         return this.broadcastReceived.on(h, thisArg, options, disposableArray);
     }
 
+    /**
+     * Registers an event listener on a notification of a specific property is received.
+     * @param key  The property key.
+     * @param h  The handler or handlers of the event listener.
+     * @param thisArg  this arg.
+     * @param options  The event listener options.
+     * @param disposableArray  An additional disposable array instance for push current event handler.
+     */
     public onPropNotifyReceived(
         key: string,
         h: EventHandlerContract<any> | EventHandlerContract<any>[],
@@ -392,6 +450,13 @@ export class PropsObservable implements DisposableArrayContract {
         return this.propNotifyReceived.on<any>(key, h, thisArg, options, disposableArray);
     }
 
+    /**
+     * Registers an event listener on a notification is received.
+     * @param h  The handler or handlers of the event listener.
+     * @param thisArg  this arg.
+     * @param options  The event listener options.
+     * @param disposableArray  An additional disposable array instance for push current event handler.
+     */
     public onNotifyReceived(
         h: EventHandlerContract<any> | EventHandlerContract<any>[],
         thisArg?: any,
@@ -401,16 +466,27 @@ export class PropsObservable implements DisposableArrayContract {
         return this.notifyReceived.on(h, thisArg, options, disposableArray);
     }
 
+    /**
+     * Subscribes for what a specific property has been changed.
+     * @param key  The property key.
+     * @param h  The callback.
+     * @param thisArg  this arg.
+     */
     public subscribeProp<T>(key: string, h: (newValue: T) => void, thisArg?: any) {
         return this.propChanged.subscribeSingle(key, h, thisArg, (newValue: ChangedInfo<T>) => newValue.value);
     }
 
+    /**
+     * Subscribes for what one or more properties have been changed.
+     * @param h  The callback.
+     * @param thisArg  this arg.
+     */
     public subscribeProps(h: (changeSet: ChangedInfo<any>[]) => void, thisArg?: any) {
         return this.propsChanged.subscribeWithConvertor(h, thisArg, (changeSet: ChangedInfoSetContract) => changeSet.changes);
     }
 
     /**
-     * Sends a property request message.
+     * Sends a request message for a property.
      * @param key  The property key.
      * @param type  The request type.
      * @param value  The data.
@@ -428,14 +504,29 @@ export class PropsObservable implements DisposableArrayContract {
         this._instance.sendRequest(type, value);
     }
 
+    /**
+     * Sends a broadcast message for a property.
+     * @param key  The property key.
+     * @param data  The data.
+     * @param message  The additional information which will pass to the event listener handler.
+     */
     public sendPropBroadcast(key: string, data: any, message?: FireInfoContract | string) {
         this._instance.sendPropBroadcast(key, data, message);
     }
 
+    /**
+     * Sends a broadcast message.
+     * @param data  The data.
+     * @param message  The additional information which will pass to the event listener handler.
+     */
     public sendBroadcast(data: any, message?: FireInfoContract | string) {
         this._instance.sendBroadcast(data, message);
     }
 
+    /**
+     * Creates an observable instance for a property.
+     * @param key  The property key.
+     */
     public createPropObservable<T>(key: string) {
         let obj: {
             accessor?: ValueAccessorContract<T>
@@ -469,10 +560,16 @@ export class PropsObservable implements DisposableArrayContract {
         return result;
     }
 
+    /**
+     * Creates an observable instance.
+     */
     public createObservable() {
         return new PropsObservable(this);
     }
 
+    /**
+     * Creates an object with properties copied from this.
+     */
     public copyModel() {
         let obj: any = {};
         this.getKeys().forEach(key => {
@@ -501,7 +598,6 @@ export class PropsObservable implements DisposableArrayContract {
  * Object property accessing and observing client.
  */
 export class PropsClient extends PropsObservable {
-    public readonly proxy: any;
 
     private readonly _propSetter: (key: string, value: any, message?: FireInfoContract | string) => ChangedInfo<any>;
     private readonly _sendPropNotify: (key: string, data: any, message?: FireInfoContract | string) => void;
@@ -509,6 +605,14 @@ export class PropsClient extends PropsObservable {
     private readonly _registerPropRequestHandler: (key: string, type: string, h: (owner: SimpleValueAccessorContract<any>, value: any) => void) => boolean;
     private readonly _registerRequestHandler: (type: string, h: (owner: SimplePropsAccessorContract, value: any) => void) => boolean;
 
+    /**
+     * Gets the data model with two-way bindings for its properties.
+     */
+    public readonly proxy: any;
+
+    /**
+     * Initializes a new instance of the PropsClient class.
+     */
     constructor(
         defaultValue: any,
         modifier: (setter: (key: string, newValue: any, message?: FireInfoContract | string) => ValueResolveContract<any>) => void,
@@ -578,23 +682,48 @@ export class PropsClient extends PropsObservable {
         return this._propSetter(key, value, message);
     }
 
+    /**
+     * Sets a value of the specific key by a Promise.
+     * @param key  The property key.
+     * @param value  A Promise of the property to set.
+     * @param compatible  true if the value can also be a non-Promise; otherwise, false.
+     * @param message  A message for the setting event.
+     */
     public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
         return Access.setPromise((value, message?) => {
             return this.setPropForDetails(key, value, message);
         }, value, compatible, message);
     }
 
+    /**
+     * Sets a value of the specific key by an observable which can be subscribed.
+     * @param key  The property key.
+     * @param value  A Promise of the property to set.
+     * @param message  A message for the setting event.
+     * @param callbackfn  A function will be called on subscribed.
+     */
     public setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
         return Access.setSubscribe((value, message?) => {
             return this.setPropForDetails(key, value, message);
         }, value, message, callbackfn, thisArg);
     }
 
+    /**
+     * Send a notification for a speicific property.
+     * @param key  The property key.
+     * @param data  The data.
+     * @param message  A message for the setting event.
+     */
     public sendPropNotify(key: string, data: any, message?: FireInfoContract | string) {
         if (typeof this._sendPropNotify !== "function") return;
         this._sendPropNotify(key, data, message);
     }
 
+    /**
+     * Send a notification.
+     * @param data  The data.
+     * @param message  A message for the setting event.
+     */
     public sendNotify(data: any, message?: FireInfoContract | string) {
         if (typeof this._sendNotify !== "function") return;
         this._sendNotify(data, message);
@@ -628,24 +757,42 @@ export class PropsClient extends PropsObservable {
 export class PropsController extends PropsObservable {
     private _accessor: PropsObservableAccessorContract;
 
+    /**
+     * Gets an object with properties which are two-way binding with this.
+     */
     public readonly proxy: any;
 
+    /**
+     * Gets the formatter/convertor.
+     */
     public get formatter() {
         return this._accessor.getFormatter();
     }
 
+    /**
+     * Sets the formatter/convertor.
+     */
     public set formatter(h) {
         this._accessor.setFormatter(h);
     }
 
+    /**
+     * Gets the validator.
+     */
     public get validator() {
         return this._accessor.getValidator();
     }
 
+    /**
+     * Sets the validator.
+     */
     public set validator(h) {
         this._accessor.setValidator(h);
     }
 
+    /**
+     * Initializes a new instance of the PropsController class.
+     */
     constructor() {
         let a: PropsObservableAccessorContract;
         super(acc => a = acc);
@@ -674,6 +821,11 @@ export class PropsController extends PropsObservable {
         });
     }
 
+    /**
+     * Force to update a property.
+     * @param key  The property key.
+     * @param message  A message for the setting event.
+     */
     public forceUpdateProp(key: string, message?: FireInfoContract | string) {
         this._accessor.forceUpdateProp(key, message);
     }
@@ -699,12 +851,26 @@ export class PropsController extends PropsObservable {
         return this._accessor.setProp(key, value, message);
     }
 
+    /**
+     * Sets a value of the specific key by a Promise.
+     * @param key  The property key.
+     * @param value  A Promise of the property to set.
+     * @param compatible  true if the value can also be a non-Promise; otherwise, false.
+     * @param message  A message for the setting event.
+     */
     public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
         return Access.setPromise((value, message?) => {
             return this.setPropForDetails(key, value, message);
         }, value, compatible, message);
     }
 
+    /**
+     * Sets a value of the specific key by an observable which can be subscribed.
+     * @param key  The property key.
+     * @param value  A Promise of the property to set.
+     * @param message  A message for the setting event.
+     * @param callbackfn  A function will be called on subscribed.
+     */
     public setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
         return Access.setSubscribe((value, message?) => {
             return this.setPropForDetails(key, value, message);
@@ -729,10 +895,21 @@ export class PropsController extends PropsObservable {
         return this._accessor.batchProp(obj, message);
     }
 
+    /**
+     * Send a notification for a speicific property.
+     * @param key  The property key.
+     * @param data  The data.
+     * @param message  The additional information which will pass to the event listener handler.
+     */
     public sendPropNotify(key: string, data: any, message?: FireInfoContract | string) {
         this._accessor.sendPropNotify(key, data, message);
     }
 
+    /**
+     * Send a notification.
+     * @param data  The data.
+     * @param message  The additional information which will pass to the event listener handler.
+     */
     public sendNotify(data: any, message?: FireInfoContract | string) {
         this._accessor.sendNotify(data, message);
     }
@@ -756,6 +933,10 @@ export class PropsController extends PropsObservable {
         return this._accessor.registerRequestHandler(type, h);
     }
 
+    /**
+     * Creates a controller client for a property.
+     * @param key  The property key.
+     */
     public createPropClient<T>(key: string) {
         let token: DisposableContract;
         let sendBroadcast = (data: any, message?: FireInfoContract | string) => {
@@ -791,6 +972,9 @@ export class PropsController extends PropsObservable {
         return client;
     }
 
+    /**
+     * Creates a controller client.
+     */
     public createClient() {
         let token: DisposableContract;
         var sendRequest = (type: string, value: any) => {
@@ -833,4 +1017,5 @@ export class PropsController extends PropsObservable {
         return client;
     }
 }
+
 }

@@ -1,6 +1,6 @@
 {
   "name": "datasense",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A set of powerful utilities and classes for accessing and observing data.",
   "main": "index.js",
   "types": "./dist/index.d.ts",
@@ -12,8 +12,12 @@
     "url": "git+https://github.com/compositejs/datasense.git"
   },
   "keywords": [
-    "observable",
-    "data flow"
+    "data",
+    "observables",
+    "data flows",
+    "events",
+    "bindings",
+    "tasks"
   ],
   "author": "Kingcean Tuan <kingcean@live.com> (http://kingcean.org)",
   "license": "MIT",

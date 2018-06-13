@@ -923,6 +923,10 @@ var DataSense;
                 return result;
             });
         }
+        /**
+         * Adds disposable objects so that they will be disposed when this instance is disposed.
+         * @param items  The objects to add.
+         */
         EventObservable.prototype.pushDisposable = function () {
             var _a;
             var items = [];
@@ -931,6 +935,14 @@ var DataSense;
             }
             return (_a = this._instance).pushDisposable.apply(_a, items);
         };
+        /**
+         * Registers an event listener.
+         * @param key  The event key.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         EventObservable.prototype.on = function (key, h, thisArg, options, disposableArray) {
             if (!h)
                 h = [];
@@ -1002,12 +1014,26 @@ var DataSense;
                 disposableArray.pushDisposable(result);
             return result;
         };
+        /**
+         * Registers an event listener that will be raised once at most.
+         * @param key  The event key.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         */
         EventObservable.prototype.once = function (key, h, thisArg) {
             return this.on(key, h, thisArg, { invalid: 1 });
         };
+        /**
+         * Clears all the specific event listeners
+         * @param key  The event key.
+         */
         EventObservable.prototype.clearOn = function (key) {
             this._instance.remove(key);
         };
+        /**
+         * Creates a single event observable.
+         * @param key  The event key.
+         */
         EventObservable.prototype.createSingleObservable = function (key) {
             return new SingleEventObservable(this, key);
         };
@@ -1030,12 +1056,22 @@ var DataSense;
             result.dispose = dispose.dispose;
             return result;
         };
+        /**
+         * Creates an observable instance so that any event listeners and subscribers will be disposed automatically when that instance is disposed.
+         */
         EventObservable.prototype.createObservable = function () {
             return new EventObservable(this);
         };
+        /**
+         * Creates an observable instance so that any event listeners and subscribers will be disposed automatically when that instance is disposed.
+         * @param mapKey  A string or a function to map keys.
+         */
         EventObservable.prototype.createMappedObservable = function (mapKey) {
             return new EventObservable(this, mapKey);
         };
+        /**
+         * Disposes the instance.
+         */
         EventObservable.prototype.dispose = function () {
             this._instance.dispose();
         };
@@ -1088,6 +1124,10 @@ var DataSense;
             this._eventObservable = eventObservable && eventObservable instanceof EventObservable ? eventObservable : new EventObservable(null);
             eventObservable.pushDisposable(this);
         }
+        /**
+         * Adds disposable objects so that they will be disposed when this instance is disposed.
+         * @param items  The objects to add.
+         */
         SingleEventObservable.prototype.pushDisposable = function () {
             var _a;
             var items = [];
@@ -1128,6 +1168,9 @@ var DataSense;
             this._disposable.push(result);
             return result;
         };
+        /**
+         * Creates an observable instance.
+         */
         SingleEventObservable.prototype.createObservable = function () {
             return new SingleEventObservable(this._eventObservable, this.key);
         };
@@ -1145,6 +1188,9 @@ var DataSense;
      */
     var EventController = /** @class */ (function (_super) {
         __extends(EventController, _super);
+        /**
+         * Initializes a new instance of the EventController class.
+         */
         function EventController() {
             var _this = this;
             var f;
@@ -1161,8 +1207,8 @@ var DataSense;
          * Raises a specific event wth arugment.
          * @param key  The event key.
          * @param ev  The event argument.
-         * @param message  The additional information.
-         * @param delay  A span in millisecond to delay this raising.
+         * @param message  The additional information which will pass to the event listener handler.
+         * @param delay  A span in millisecond to delay to raise.
          */
         EventController.prototype.fire = function (key, ev, message, delay) {
             var _this = this;
@@ -1199,6 +1245,10 @@ var DataSense;
      * The observable for resolving data.
      */
     var OnceObservable = /** @class */ (function () {
+        /**
+         * Initializes a new instance of the OnceObservable class.
+         * @param executor  An executor to call resolve or reject.
+         */
         function OnceObservable(executor) {
             var _this = this;
             this._result = {};
@@ -1238,26 +1288,42 @@ var DataSense;
                 process(false, err);
             });
         }
-        OnceObservable.prototype.promise = function () {
-            var resolveH;
-            var rejectH;
-            var p = new Promise(function (resolve, reject) {
-                resolveH = resolve;
-                rejectH = reject;
-            });
-            this.onResolved(resolveH);
-            this.onRejected(rejectH);
-            return p;
-        };
-        OnceObservable.prototype.isPending = function () {
-            return this._result.success === undefined;
-        };
-        OnceObservable.prototype.isSuccess = function () {
-            return this._result.success === true;
-        };
-        OnceObservable.prototype.isFailed = function () {
-            return this._result.success === false;
-        };
+        Object.defineProperty(OnceObservable.prototype, "isPending", {
+            /**
+             * Gets a value indicating whether it is pending.
+             */
+            get: function () {
+                return this._result.success === undefined;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(OnceObservable.prototype, "isSuccessful", {
+            /**
+             * Gets a value indicating whether it is successful.
+             */
+            get: function () {
+                return this._result.success === true;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(OnceObservable.prototype, "isFailed", {
+            /**
+             * Gets a value indicating whether it is failed.
+             */
+            get: function () {
+                return this._result.success === false;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        /**
+         * Added a callback when the result is resolved.
+         * @param h  The callback.
+         * @param thisArg  this arg.
+         * @param delay  A span in millisecond to delay to process.
+         */
         OnceObservable.prototype.onResolved = function (h, thisArg, delay) {
             if (this._result.success === true) {
                 h.call(thisArg, this._result.value);
@@ -1269,12 +1335,24 @@ var DataSense;
                 this._result.resolved = [];
             this._result.resolved.push({ h: h, delay: delay, thisArg: thisArg });
         };
+        /**
+         * Added a callback after a while. The callback will be called when the result is resolved.
+         * @param h  The callback.
+         * @param thisArg  this arg.
+         * @param delay  A span in millisecond to delay to process.
+         */
         OnceObservable.prototype.onResolvedLater = function (h, thisArg, delay) {
             var _this = this;
             DataSense.HitTask.delay(function () {
                 _this.onResolved(h, thisArg, delay);
             }, true);
         };
+        /**
+         * Added a callback when the result is rejected.
+         * @param h  The callback.
+         * @param thisArg  this arg.
+         * @param delay  A span in millisecond to delay to process.
+         */
         OnceObservable.prototype.onRejected = function (h, thisArg, delay) {
             if (this._result.success === false) {
                 h.call(thisArg, this._result.value);
@@ -1286,18 +1364,52 @@ var DataSense;
                 this._result.rejected = [];
             this._result.rejected.push({ h: h, delay: delay, thisArg: thisArg });
         };
+        /**
+         * Added a callback after a while. The callback will be called when the result is rejected.
+         * @param h  The callback.
+         * @param thisArg  this arg.
+         * @param delay  A span in millisecond to delay to process.
+         */
         OnceObservable.prototype.onRejectedLater = function (h, thisArg, delay) {
             var _this = this;
             DataSense.HitTask.delay(function () {
                 _this.onRejected(h, thisArg, delay);
             }, true);
         };
+        /**
+         * Creates a promise instance.
+         */
+        OnceObservable.prototype.promise = function () {
+            var resolveH;
+            var rejectH;
+            var p = new Promise(function (resolve, reject) {
+                resolveH = resolve;
+                rejectH = reject;
+            });
+            this.onResolved(resolveH);
+            this.onRejected(rejectH);
+            return p;
+        };
+        /**
+         * Attaches callbacks for the resolution and/or rejection of the Promise.
+         * @param onfulfilled The callback to execute when the Promise is resolved.
+         * @param onrejected The callback to execute when the Promise is rejected.
+         * @returns A Promise for the completion of which ever callback is executed.
+         */
         OnceObservable.prototype.then = function (onfulfilled, onrejected) {
             return this.promise().then(onfulfilled, onrejected);
         };
+        /**
+         * Attaches a callback for only the rejection of the Promise.
+         * @param onrejected The callback to execute when the Promise is rejected.
+         * @returns A Promise for the completion of the callback.
+         */
         OnceObservable.prototype.catch = function (onrejected) {
             return this.promise().catch(onrejected);
         };
+        /**
+         * Creates an observable instance.
+         */
         OnceObservable.prototype.createObservable = function () {
             return new OnceObservable(this);
         };
@@ -1309,6 +1421,9 @@ var DataSense;
      */
     var OnceController = /** @class */ (function (_super) {
         __extends(OnceController, _super);
+        /**
+         * Initializes a new instance of the OnceController class.
+         */
         function OnceController() {
             var _this = this;
             var a;
@@ -1342,6 +1457,9 @@ var DataSense;
      * The information for data changing.
      */
     var ChangingInfo = /** @class */ (function () {
+        /**
+         * Initializes a new instance of the ChangingInfo class.
+         */
         function ChangingInfo(key, currentValue, valueRequest, observable, action) {
             this.key = key;
             this.currentValue = currentValue;
@@ -1351,6 +1469,26 @@ var DataSense;
             if (!action)
                 this.action = "update";
         }
+        /**
+         * Added a callback when the result is resolved.
+         * @param h  The callback.
+         * @param thisArg  this arg.
+         * @param delay  A span in millisecond to delay to process.
+         */
+        ChangingInfo.prototype.onResolved = function (h, thisArg, delay) {
+            if (this.observable)
+                this.observable.onResolved(h, thisArg, delay);
+        };
+        /**
+         * Added a callback when the result is rejected.
+         * @param h  The callback.
+         * @param thisArg  this arg.
+         * @param delay  A span in millisecond to delay to process.
+         */
+        ChangingInfo.prototype.onRejected = function (h, thisArg, delay) {
+            if (this.observable)
+                this.observable.onRejected(h, thisArg, delay);
+        };
         return ChangingInfo;
     }());
     DataSense.ChangingInfo = ChangingInfo;
@@ -1358,6 +1496,9 @@ var DataSense;
      * The information for data changed.
      */
     var ChangedInfo = /** @class */ (function () {
+        /**
+         * Initializes a new instance of the ChangedInfo class.
+         */
         function ChangedInfo(key, action, success, value, oldValue, valueRequest, error) {
             this.key = key;
             this.action = action;
@@ -1367,6 +1508,16 @@ var DataSense;
             this.valueRequest = valueRequest;
             this.error = error;
         }
+        Object.defineProperty(ChangedInfo.prototype, "hasChanged", {
+            /**
+             * Gets a value indicating whether the value has been changed.
+             */
+            get: function () {
+                return this.oldValue === this.value;
+            },
+            enumerable: true,
+            configurable: true
+        });
         ChangedInfo.success = function (key, value, oldValue, action, valueRequest, error) {
             if (!action) {
                 if (key) {
@@ -1604,6 +1755,10 @@ var DataSense;
             }
             changer(obj.accessor);
         }
+        /**
+         * Adds disposable objects so that they will be disposed when this instance is disposed.
+         * @param items  The objects to add.
+         */
         PropsObservable.prototype.pushDisposable = function () {
             var _a;
             var items = [];
@@ -1643,12 +1798,36 @@ var DataSense;
         PropsObservable.prototype.clearChangeFlow = function (key) {
             return this._instance.clearFlows(key);
         };
+        /**
+         * Registers an event listener on the speicific property is changing.
+         * @param key  The property key.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         PropsObservable.prototype.onPropChanging = function (key, h, thisArg, options, disposableArray) {
             return this.propChanging.on(key, h, thisArg, options, disposableArray);
         };
+        /**
+         * Registers an event listener on the speicific property has been changed.
+         * @param key  The property key.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         PropsObservable.prototype.onPropChanged = function (key, h, thisArg, options, disposableArray) {
             return this.propChanged.on(key, h, thisArg, options, disposableArray);
         };
+        /**
+         * Registers an event listener on the speicific property is failed to change.
+         * @param key  The property key.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         PropsObservable.prototype.onPropChangeFailed = function (key, h, thisArg, options, disposableArray) {
             if (!key || typeof key !== "string")
                 return DataSense.EventObservable.createFailedOnResult(null);
@@ -1663,29 +1842,77 @@ var DataSense;
         PropsObservable.prototype.onAnyPropChangeFailed = function (h, thisArg, options, disposableArray) {
             return this.anyPropChangeFailed.on(h, thisArg, options, disposableArray);
         };
+        /**
+         * Registers an event listener on one or more properties have been changed.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         PropsObservable.prototype.onPropsChanged = function (h, thisArg, options, disposableArray) {
             return this.propsChanged.on(h, thisArg, options, disposableArray);
         };
+        /**
+         * Registers an event listener on a broadcast message of a specific property is received.
+         * @param key  The property key.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         PropsObservable.prototype.onPropBroadcastReceived = function (key, h, thisArg, options, disposableArray) {
             return this.propBroadcastReceived.on(key, h, thisArg, options, disposableArray);
         };
+        /**
+         * Registers an event listener on a broadcast message is received.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         PropsObservable.prototype.onBroadcastReceived = function (h, thisArg, options, disposableArray) {
             return this.broadcastReceived.on(h, thisArg, options, disposableArray);
         };
+        /**
+         * Registers an event listener on a notification of a specific property is received.
+         * @param key  The property key.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         PropsObservable.prototype.onPropNotifyReceived = function (key, h, thisArg, options, disposableArray) {
             return this.propNotifyReceived.on(key, h, thisArg, options, disposableArray);
         };
+        /**
+         * Registers an event listener on a notification is received.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         PropsObservable.prototype.onNotifyReceived = function (h, thisArg, options, disposableArray) {
             return this.notifyReceived.on(h, thisArg, options, disposableArray);
         };
+        /**
+         * Subscribes for what a specific property has been changed.
+         * @param key  The property key.
+         * @param h  The callback.
+         * @param thisArg  this arg.
+         */
         PropsObservable.prototype.subscribeProp = function (key, h, thisArg) {
             return this.propChanged.subscribeSingle(key, h, thisArg, function (newValue) { return newValue.value; });
         };
+        /**
+         * Subscribes for what one or more properties have been changed.
+         * @param h  The callback.
+         * @param thisArg  this arg.
+         */
         PropsObservable.prototype.subscribeProps = function (h, thisArg) {
             return this.propsChanged.subscribeWithConvertor(h, thisArg, function (changeSet) { return changeSet.changes; });
         };
         /**
-         * Sends a property request message.
+         * Sends a request message for a property.
          * @param key  The property key.
          * @param type  The request type.
          * @param value  The data.
@@ -1701,12 +1928,27 @@ var DataSense;
         PropsObservable.prototype.sendRequest = function (type, value) {
             this._instance.sendRequest(type, value);
         };
+        /**
+         * Sends a broadcast message for a property.
+         * @param key  The property key.
+         * @param data  The data.
+         * @param message  The additional information which will pass to the event listener handler.
+         */
         PropsObservable.prototype.sendPropBroadcast = function (key, data, message) {
             this._instance.sendPropBroadcast(key, data, message);
         };
+        /**
+         * Sends a broadcast message.
+         * @param data  The data.
+         * @param message  The additional information which will pass to the event listener handler.
+         */
         PropsObservable.prototype.sendBroadcast = function (data, message) {
             this._instance.sendBroadcast(data, message);
         };
+        /**
+         * Creates an observable instance for a property.
+         * @param key  The property key.
+         */
         PropsObservable.prototype.createPropObservable = function (key) {
             var _this = this;
             var obj = {};
@@ -1739,9 +1981,15 @@ var DataSense;
             result.pushDisposable(onToken);
             return result;
         };
+        /**
+         * Creates an observable instance.
+         */
         PropsObservable.prototype.createObservable = function () {
             return new PropsObservable(this);
         };
+        /**
+         * Creates an object with properties copied from this.
+         */
         PropsObservable.prototype.copyModel = function () {
             var _this = this;
             var obj = {};
@@ -1773,6 +2021,9 @@ var DataSense;
      */
     var PropsClient = /** @class */ (function (_super) {
         __extends(PropsClient, _super);
+        /**
+         * Initializes a new instance of the PropsClient class.
+         */
         function PropsClient(defaultValue, modifier, propSetter, sendPropNotify, sendNotify, registerPropRequestHandler, registerRequestHandler, additionalEvents) {
             var _this = this;
             var h = function (acc) {
@@ -1842,23 +2093,48 @@ var DataSense;
                 return DataSense.ChangedInfo.fail(null, undefined, value, "not implemented");
             return this._propSetter(key, value, message);
         };
+        /**
+         * Sets a value of the specific key by a Promise.
+         * @param key  The property key.
+         * @param value  A Promise of the property to set.
+         * @param compatible  true if the value can also be a non-Promise; otherwise, false.
+         * @param message  A message for the setting event.
+         */
         PropsClient.prototype.setPromiseProp = function (key, value, compatible, message) {
             var _this = this;
             return DataSense.Access.setPromise(function (value, message) {
                 return _this.setPropForDetails(key, value, message);
             }, value, compatible, message);
         };
+        /**
+         * Sets a value of the specific key by an observable which can be subscribed.
+         * @param key  The property key.
+         * @param value  A Promise of the property to set.
+         * @param message  A message for the setting event.
+         * @param callbackfn  A function will be called on subscribed.
+         */
         PropsClient.prototype.setSubscribeProp = function (key, value, message, callbackfn, thisArg) {
             var _this = this;
             return DataSense.Access.setSubscribe(function (value, message) {
                 return _this.setPropForDetails(key, value, message);
             }, value, message, callbackfn, thisArg);
         };
+        /**
+         * Send a notification for a speicific property.
+         * @param key  The property key.
+         * @param data  The data.
+         * @param message  A message for the setting event.
+         */
         PropsClient.prototype.sendPropNotify = function (key, data, message) {
             if (typeof this._sendPropNotify !== "function")
                 return;
             this._sendPropNotify(key, data, message);
         };
+        /**
+         * Send a notification.
+         * @param data  The data.
+         * @param message  A message for the setting event.
+         */
         PropsClient.prototype.sendNotify = function (data, message) {
             if (typeof this._sendNotify !== "function")
                 return;
@@ -1893,6 +2169,9 @@ var DataSense;
      */
     var PropsController = /** @class */ (function (_super) {
         __extends(PropsController, _super);
+        /**
+         * Initializes a new instance of the PropsController class.
+         */
         function PropsController() {
             var _this = this;
             var a;
@@ -1926,9 +2205,15 @@ var DataSense;
             return _this;
         }
         Object.defineProperty(PropsController.prototype, "formatter", {
+            /**
+             * Gets the formatter/convertor.
+             */
             get: function () {
                 return this._accessor.getFormatter();
             },
+            /**
+             * Sets the formatter/convertor.
+             */
             set: function (h) {
                 this._accessor.setFormatter(h);
             },
@@ -1936,15 +2221,26 @@ var DataSense;
             configurable: true
         });
         Object.defineProperty(PropsController.prototype, "validator", {
+            /**
+             * Gets the validator.
+             */
             get: function () {
                 return this._accessor.getValidator();
             },
+            /**
+             * Sets the validator.
+             */
             set: function (h) {
                 this._accessor.setValidator(h);
             },
             enumerable: true,
             configurable: true
         });
+        /**
+         * Force to update a property.
+         * @param key  The property key.
+         * @param message  A message for the setting event.
+         */
         PropsController.prototype.forceUpdateProp = function (key, message) {
             this._accessor.forceUpdateProp(key, message);
         };
@@ -1967,12 +2263,26 @@ var DataSense;
         PropsController.prototype.setPropForDetails = function (key, value, message) {
             return this._accessor.setProp(key, value, message);
         };
+        /**
+         * Sets a value of the specific key by a Promise.
+         * @param key  The property key.
+         * @param value  A Promise of the property to set.
+         * @param compatible  true if the value can also be a non-Promise; otherwise, false.
+         * @param message  A message for the setting event.
+         */
         PropsController.prototype.setPromiseProp = function (key, value, compatible, message) {
             var _this = this;
             return DataSense.Access.setPromise(function (value, message) {
                 return _this.setPropForDetails(key, value, message);
             }, value, compatible, message);
         };
+        /**
+         * Sets a value of the specific key by an observable which can be subscribed.
+         * @param key  The property key.
+         * @param value  A Promise of the property to set.
+         * @param message  A message for the setting event.
+         * @param callbackfn  A function will be called on subscribed.
+         */
         PropsController.prototype.setSubscribeProp = function (key, value, message, callbackfn, thisArg) {
             var _this = this;
             return DataSense.Access.setSubscribe(function (value, message) {
@@ -1995,9 +2305,20 @@ var DataSense;
         PropsController.prototype.setProps = function (obj, message) {
             return this._accessor.batchProp(obj, message);
         };
+        /**
+         * Send a notification for a speicific property.
+         * @param key  The property key.
+         * @param data  The data.
+         * @param message  The additional information which will pass to the event listener handler.
+         */
         PropsController.prototype.sendPropNotify = function (key, data, message) {
             this._accessor.sendPropNotify(key, data, message);
         };
+        /**
+         * Send a notification.
+         * @param data  The data.
+         * @param message  The additional information which will pass to the event listener handler.
+         */
         PropsController.prototype.sendNotify = function (data, message) {
             this._accessor.sendNotify(data, message);
         };
@@ -2018,6 +2339,10 @@ var DataSense;
         PropsController.prototype.registerRequestHandler = function (type, h) {
             return this._accessor.registerRequestHandler(type, h);
         };
+        /**
+         * Creates a controller client for a property.
+         * @param key  The property key.
+         */
         PropsController.prototype.createPropClient = function (key) {
             var _this = this;
             var token;
@@ -2054,6 +2379,9 @@ var DataSense;
             client.pushDisposable(token);
             return client;
         };
+        /**
+         * Creates a controller client.
+         */
         PropsController.prototype.createClient = function () {
             var _this = this;
             var token;
@@ -2107,6 +2435,9 @@ var DataSense;
      * A task for processing with times limitation and delay options.
      */
     var HitTask = /** @class */ (function () {
+        /**
+         * Initializes a new instance of the HitTask class.
+         */
         function HitTask() {
             var _this = this;
             this._options = {};
@@ -2167,9 +2498,23 @@ var DataSense;
                     }, options.delay);
             };
         }
-        HitTask.prototype.setOptions = function (value) {
-            this._options = value || {};
+        /**
+         * Sets the options.
+         * @param value  The options.
+         * @param merge  true if merge the properties into the current one; otherwise, false.
+         */
+        HitTask.prototype.setOptions = function (value, merge) {
+            if (!merge) {
+                this._options = value || {};
+            }
+            else if (value) {
+                this._options = __assign({}, this._options, value);
+            }
         };
+        /**
+         * Registers the handler to process when need.
+         * @param h  One or more handlers.
+         */
         HitTask.prototype.pushHandler = function () {
             var _this = this;
             var h = [];
@@ -2186,16 +2531,32 @@ var DataSense;
             });
             return count;
         };
+        /**
+         * Clears all handlers.
+         */
         HitTask.prototype.clearHandler = function () {
             this._h = [];
         };
+        /**
+         * Tries to process.
+         * The handlers registered may not be proceeded unless pass the condition.
+         * @param arg  An argument to pass to the handlers registered.
+         */
         HitTask.prototype.process = function (arg) {
             this._proc(arg);
         };
+        /**
+         * Tries to abort the pending processing.
+         */
         HitTask.prototype.abort = function () {
             this._abort();
         };
-        HitTask.delay = function (h, span, justPrepare) {
+        /**
+         * Delays to process a speicific handler.
+         * @param h  The handler.
+         * @param span  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
+         */
+        HitTask.delay = function (h, span) {
             var procToken;
             if (span == null || span === false)
                 h();
@@ -2217,6 +2578,12 @@ var DataSense;
                 }
             };
         };
+        /**
+         * Processes a handler and ignore the up coming ones in a specific time span.
+         * @param h  The handler to process.
+         * @param span  A time span in millisecond to avoid up coming.
+         * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+         */
         HitTask.throttle = function (h, span, justPrepare) {
             var task = new HitTask();
             task.setOptions({
@@ -2280,6 +2647,93 @@ var DataSense;
             task.pushHandler(h);
             if (!justPrepare)
                 task.process();
+            return task;
+        };
+        /**
+         * Schedule to process a specific handler.
+         * @param h  The handler to process.
+         * @param span  A time span in millisecond of duration.
+         */
+        HitTask.schedule = function (h, span) {
+            var token;
+            var token2;
+            var startDate;
+            var processDate;
+            var stopDate;
+            var latest;
+            var isInit = true;
+            var clearToken = function () {
+                if (token2)
+                    token2.dispose();
+                token2 = null;
+                if (!token)
+                    return;
+                clearInterval(token);
+                token = null;
+            };
+            var process = function (source) {
+                processDate = new Date();
+                h({
+                    startDate: startDate,
+                    latestStopDate: stopDate,
+                    processDate: processDate,
+                    latestProcessDate: latest,
+                    span: span,
+                    source: source
+                });
+                latest = new Date();
+            };
+            var startProc = function (delay, source) {
+                isInit = false;
+                clearToken();
+                token2 = HitTask.delay(function () {
+                    token2 = null;
+                    process(source);
+                    token = setInterval(function () {
+                        process("schedule");
+                    }, span);
+                }, delay);
+            };
+            var task = {
+                start: function (isPlan) {
+                    var delay = false;
+                    var source = isPlan ? "plan" : "start";
+                    if (startDate)
+                        source = ("re" + source);
+                    if (typeof isPlan === "number")
+                        delay = isPlan;
+                    else if (isPlan === true)
+                        delay = span;
+                    startProc(delay, source);
+                },
+                process: function () {
+                    process("immediate");
+                },
+                resume: function (isPlan) {
+                    if (token || token2)
+                        return;
+                    if (isInit || !stopDate || !startDate) {
+                        startProc(isPlan, startDate ? "restart" : "resume");
+                        return;
+                    }
+                    var delay = span - stopDate.getTime() - startDate.getTime();
+                    if (delay <= 0)
+                        delay = false;
+                    startProc(delay, "resume");
+                },
+                pause: function () {
+                    clearToken();
+                    stopDate = new Date();
+                },
+                stop: function () {
+                    clearToken();
+                    stopDate = new Date();
+                    isInit = true;
+                },
+                get alive() {
+                    return token || token2;
+                }
+            };
             return task;
         };
         return HitTask;
@@ -2450,6 +2904,10 @@ var DataSense;
                 }
             });
         }
+        /**
+         * Adds disposable objects so that they will be disposed when this instance is disposed.
+         * @param items  The objects to add.
+         */
         ValueObservable.prototype.pushDisposable = function () {
             var _a;
             var items = [];
@@ -2465,13 +2923,13 @@ var DataSense;
             return this._instance.get();
         };
         /**
-         * Gets the value.
+         * Gets the type of value.
          */
         ValueObservable.prototype.getType = function () {
             return typeof this._instance.get();
         };
         /**
-         * Gets the value.
+         * Checks if the value is instance of a specific type.
          */
         ValueObservable.prototype.instanceOf = function (c) {
             return this._instance.get() instanceof c;
@@ -2487,32 +2945,77 @@ var DataSense;
         ValueObservable.prototype.clearChangeFlow = function () {
             return this._instance.clearFlows();
         };
+        /**
+         * Registers an event listener on the value is changing.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         ValueObservable.prototype.onChanging = function (h, thisArg, options, disposableArray) {
             return this.changing.on(h, thisArg, options, disposableArray);
         };
+        /**
+         * Registers an event listener on the value has been changed.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         ValueObservable.prototype.onChanged = function (h, thisArg, options, disposableArray) {
             return this.changed.on(h, thisArg, options, disposableArray);
         };
+        /**
+         * Registers an event listener on the value is failed to change.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         ValueObservable.prototype.onChangeFailed = function (h, thisArg, options, disposableArray) {
             return this.changeFailed.on(h, thisArg, options, disposableArray);
         };
+        /**
+         * Registers an event listener on a broadcast message is received.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         ValueObservable.prototype.onBroadcastReceived = function (h, thisArg, options, disposableArray) {
             return this.broadcastReceived.on(h, thisArg, options, disposableArray);
         };
+        /**
+         * Registers an event listener on a notification is received.
+         * @param h  The handler or handlers of the event listener.
+         * @param thisArg  this arg.
+         * @param options  The event listener options.
+         * @param disposableArray  An additional disposable array instance for push current event handler.
+         */
         ValueObservable.prototype.onNotifyReceived = function (h, thisArg, options, disposableArray) {
             return this.notifyReceived.on(h, thisArg, options, disposableArray);
         };
+        /**
+         * Subscribes for what the value has been changed.
+         * @param h  The callback.
+         * @param thisArg  this arg.
+         */
         ValueObservable.prototype.subscribe = function (h, thisArg) {
             return this.changed.subscribeWithConvertor(h, thisArg, function (newValue) { return newValue.value; });
         };
         /**
          * Sends a request message.
-         * @param type  The request type.
-         * @param value  The data.
+         * @param data  The data.
+         * @param message  The additional information.
          */
         ValueObservable.prototype.sendRequest = function (type, value) {
             this._instance.sendRequest(type, value);
         };
+        /**
+         * Sends a broadcast message.
+         * @param data  The data.
+         * @param message  The additional information which will pass to the event listener handler.
+         */
         ValueObservable.prototype.sendBroadcast = function (data, message) {
             this._instance.sendBroadcast(data, message);
         };
@@ -2542,6 +3045,9 @@ var DataSense;
      */
     var ValueClient = /** @class */ (function (_super) {
         __extends(ValueClient, _super);
+        /**
+         * Initializes a new instance of the ValueClient class.
+         */
         function ValueClient(defaultValue, modifier, setter, sendNotify, registerRequestHandler, additionalEvents) {
             var _this = this;
             var h = function (acc) {
@@ -2559,29 +3065,56 @@ var DataSense;
                 _this._registerRequestHandler = registerRequestHandler;
             return _this;
         }
+        /**
+         * Sets value.
+         * @param value  The value of the property to set.
+         * @param message  A message for the setting event.
+         */
         ValueClient.prototype.set = function (value, message) {
             if (typeof this._setter !== "function")
                 return false;
             var info = this._setter(value, message);
             return info ? info.success : false;
         };
+        /**
+         * Sets the value. A status and further information will be returned.
+         * @param value  The value of the property to set.
+         * @param message  A message for the setting event.
+         */
         ValueClient.prototype.setForDetails = function (value, message) {
             if (typeof this._setter !== "function")
                 return DataSense.ChangedInfo.fail(null, undefined, value, "not implemented");
             return this._setter(value, message);
         };
+        /**
+         * Sets a value by a Promise.
+         * @param value  A Promise of the property to set.
+         * @param compatible  true if the value can also be a non-Promise; otherwise, false.
+         * @param message  A message for the setting event.
+         */
         ValueClient.prototype.setPromise = function (value, compatible, message) {
             var _this = this;
             return DataSense.Access.setPromise(function (value, message) {
                 return _this.setForDetails(value, message);
             }, value, compatible, message);
         };
+        /**
+         * Sets a value by an observable which can be subscribed.
+         * @param value  A Promise of the property to set.
+         * @param message  A message for the setting event.
+         * @param callbackfn  A function will be called on subscribed.
+         */
         ValueClient.prototype.setSubscribe = function (value, message, callbackfn, thisArg) {
             var _this = this;
             return DataSense.Access.setSubscribe(function (value, message) {
                 return _this.setForDetails(value, message);
             }, value, message, callbackfn, thisArg);
         };
+        /**
+         * Send a notification.
+         * @param data  The data.
+         * @param message  A message for the setting event.
+         */
         ValueClient.prototype.sendNotify = function (data, message) {
             this._sendNotify(data, message);
         };
@@ -2603,6 +3136,9 @@ var DataSense;
      */
     var ValueController = /** @class */ (function (_super) {
         __extends(ValueController, _super);
+        /**
+         * Initializes a new instance of the ValueController class.
+         */
         function ValueController() {
             var _this = this;
             var a;
@@ -2611,9 +3147,15 @@ var DataSense;
             return _this;
         }
         Object.defineProperty(ValueController.prototype, "formatter", {
+            /**
+             * Gets the formatter/convertor.
+             */
             get: function () {
                 return this._accessor.getFormatter();
             },
+            /**
+             * Sets the formatter/convertor.
+             */
             set: function (h) {
                 this._accessor.setFormatter(h);
             },
@@ -2621,9 +3163,15 @@ var DataSense;
             configurable: true
         });
         Object.defineProperty(ValueController.prototype, "validator", {
+            /**
+             * Gets the validator.
+             */
             get: function () {
                 return this._accessor.getValidator();
             },
+            /**
+             * Sets the validator.
+             */
             set: function (h) {
                 this._accessor.setValidator(h);
             },
@@ -2647,12 +3195,24 @@ var DataSense;
         ValueController.prototype.setForDetails = function (value, message) {
             return this._accessor.set(value, message);
         };
+        /**
+         * Sets a value by a Promise.
+         * @param value  A Promise of the property to set.
+         * @param compatible  true if the value can also be a non-Promise; otherwise, false.
+         * @param message  A message for the setting event.
+         */
         ValueController.prototype.setPromise = function (value, compatible, message) {
             var _this = this;
             return DataSense.Access.setPromise(function (value, message) {
                 return _this.setForDetails(value, message);
             }, value, compatible, message);
         };
+        /**
+         * Sets a value by an observable which can be subscribed.
+         * @param value  A Promise of the property to set.
+         * @param message  A message for the setting event.
+         * @param callbackfn  A function will be called on subscribed.
+         */
         ValueController.prototype.setSubscribe = function (value, message, callbackfn, thisArg) {
             var _this = this;
             return DataSense.Access.setSubscribe(function (value, message) {
@@ -2693,6 +3253,9 @@ var DataSense;
         ValueController.prototype.isObserving = function () {
             return !!this._observing;
         };
+        /**
+         * Creates a controller client.
+         */
         ValueController.prototype.createClient = function () {
             var _this = this;
             var token;
@@ -2726,6 +3289,11 @@ var DataSense;
             this.pushDisposable(client);
             return client;
         };
+        /**
+         * Send a notification.
+         * @param data  The data.
+         * @param message  The additional information which will pass to the event listener handler.
+         */
         ValueController.prototype.sendNotify = function (data, message) {
             this._accessor.sendNotify(data, message);
         };
@@ -2733,4 +3301,3 @@ var DataSense;
     }(ValueObservable));
     DataSense.ValueController = ValueController;
 })(DataSense || (DataSense = {}));
-//# sourceMappingURL=index.js.map

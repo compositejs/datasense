@@ -119,6 +119,34 @@ In fact, the above multiple hits example is to set the options as following.
 }
 ```
 
+## Scheduler
+
+You can create a schedule task if you want to process a handler periodically.
+
+```typescript
+let scheduler = HitTask.schedule(info => {
+    // Do something here.
+}, 6000);
+
+// Start now.
+scheduler.start();
+
+// Pause.
+scheduler.pause();
+
+// Resume.
+scheduler.resume();
+
+// Start after the duration.
+scheduler.start(true);
+
+// Process the handler immediately without the controlling of scheduler.
+scheduler.process();
+
+// Stop.
+scheduler.stop();
+```
+
 ---
 
 [Next](./event.md)

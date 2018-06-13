@@ -29,12 +29,12 @@ In fact, you can have further power to control and get details about this event 
 ```typescript
 // Add event listener.
 events.on("click", (ev, listenerController) => {
-    // You can get the date of current and latest date raised of this handler.
+    // You can access the controller for current event listener for status and actions.
+    // For example, you can get the date of current and latest date raised of this handler.
     // So that you can use these information to add a debounce, throttle or multiple hits event handler.
     console.info(`Clicked at ${listenerController.fireDate.toLocaleTimeString()}!`, ev);
 
-    // You can access the controller for current event listener for status and actions.
-    // For example, we can off this listener after 3 times raised.
+    // We can dispose this listener after 3 times raised.
     if (listenerController.count > 3)
         listener.dispose();
 });
@@ -104,7 +104,7 @@ Sometimes, we need use a variable or more to save the temp data during an event 
 
 ```typescript
 events.on("click", (ev, listenerController) => {
-    // And you can get a value you saved in previous time.
+    // You can get a value you saved in previous time.
     // You need identify it by a key since you can set and get a lot.
     if (listenerController.hasStoreData("latestValue"))
         console.info("Latest event argument.", listenerController.getStoreData("latestValue"));
@@ -121,7 +121,7 @@ These data will not share with other event listeners.
 
 ## Create observable instance
 
-And you can create an observable instance which is used for adding listeners with lots of useful options only so that you can send this object to other places.
+And you can create an observable instance which is used for adding listeners with lots of useful options only so that you can send this object to other places. Its event listeners and subscriptions will be disposed automatically when this observable instance is disposed.
 
 ```typescript
 let eventObs = events.createObservable();
