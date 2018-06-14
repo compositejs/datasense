@@ -333,4 +333,91 @@ testCase.add("Observable", () => {
     assert.equals(valueChangedTimes, 7);
 });
 
+testCase.add("Bindings", () => {
+    let value1 = new DataSense.ValueController();
+    let value2 = new DataSense.ValueController();
+
+    // Set values.
+    value1.set("abc");
+    value2.set("defg");
+
+    // We can let value1 is observing value2.
+    value1.observe(value2);
+    assert.isTrue(value1.isObserving());
+    assert.equals(value1.get(), "defg");
+    assert.isFalse(value2.isObserving());
+    assert.equals(value2.get(), "defg");
+
+    // Set value1.
+    value1.set("hijk");
+    assert.equals(value1.get(), "hijk");
+    assert.equals(value2.get(), "defg");
+
+    // Set value2. It will sync to value1.
+    value2.set("lmn");
+    assert.equals(value1.get(), "lmn");
+    assert.equals(value2.get(), "lmn");
+
+    // Let value2 observe value1 so that we build a two-way bindings between them.
+    value2.observe(value1);
+    assert.isTrue(value1.isObserving());
+    assert.isTrue(value2.isObserving());
+
+    // Set value1. It will sync to value2.
+    let count = 0;
+    value1.onChanging(ev => {
+        count++;
+        console.info("value1 changing " + ev.valueRequest + " " + count);
+        ev.onRejected(err => {
+            count++;
+            console.info("value1 failed " + err + " " + count);
+        });
+        ev.onResolved(nv => {
+            count++;
+            console.info("value1 succ " + nv + " " + count);
+        });
+    });
+    value2.onChanging(ev => {
+        count++;
+        console.info("value2 changing " + ev.valueRequest + " " + count);
+        ev.onRejected(err => {
+            count++;
+            console.info("value2 failed " + err + " " + count);
+        });
+        ev.onResolved(nv => {
+            count++;
+            console.info("value2 succ " + nv + " " + count);
+        });
+    });
+    value1.set("opq");
+    assert.equals(value1.get(), "opq");
+    assert.equals(value2.get(), "opq");
+
+    // Set value2. It will sync to value1, too.
+    value2.set("rst");
+    assert.equals(value1.get(), "rst");
+    assert.equals(value2.get(), "rst");
+
+    // Stop sync by value1.
+    value1.stopObserving();
+    assert.isFalse(value1.isObserving());
+    assert.isTrue(value2.isObserving());
+
+    // Set value1. It will still sync to value2.
+    value1.set("uvw");
+    assert.equals(value1.get(), "uvw");
+    assert.equals(value2.get(), "uvw");
+
+    // Set value2. It will not sync to value1.
+    value2.set("xyz");
+    assert.equals(value1.get(), "uvw");
+    assert.equals(value2.get(), "xyz");
+
+    // Force to fill value observed to current one.
+    // Call the sync method in value2 to sync the value of value1 to value2.
+    value2.syncFromObserved();
+    assert.equals(value1.get(), "uvw");
+    assert.equals(value2.get(), "uvw");
+});
+
 module.exports = testCase;

@@ -48,7 +48,9 @@ function buildTs2() {
     var tsProject = ts.createProject("src/tsconfig.json");
     return tsProject.src()
         .pipe(tsProject())
-        .js.pipe(gulp.dest("dist"));
+        .js.pipe(gulp.dest("dist"))
+        .pipe(uglify())
+        .pipe(gulp.dest("dist"));
 };
 
 gulp.task('test', function () {

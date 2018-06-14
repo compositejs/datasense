@@ -74,12 +74,12 @@ value.onChanging(ev => {
 
     // And we can set a callback when done.
     ev.observable.onResolved(newValue => {
-        console.info(`New value is ${newValue}`);
+        console.info(`New value is ${newValue}.`);
     });
 
     // And also for failure.
-    ev.observable.onRejected(newValue => {
-        console.info(`New value is ${newValue}`);
+    ev.observable.onRejected(err => {
+        console.info("Something wrong.", err);
     });
 });
 ```
@@ -165,6 +165,39 @@ valueObs.onNotifyReceived(ev => {
 });
 value.sendNotify("This is a notification.");
 ```
+
+## Bindings
+
+You can observe another observable value so that its value will be changed if that value is changed.
+
+```typescript
+// Suppose there is another observable value.
+let value2 = new ValueController();
+value2.set("Initialized value");
+
+// Observe that instance to build one-way bindings.
+// value2 -> value
+value.observe(value2);
+console.info(value.get()); // Should be "Initialized value".
+```
+
+If you set a new value into current value controller:
+
+- Current one will be set succeeded.
+- The value observed will not be updated; and
+- Current one will be overridden by value observed again when the value observed is set by another value or you asked to sync immediately as following example.
+
+```typescript
+value.syncFromObserved();
+```
+
+And you can also build two-way binding between them by let them observe each other so that any of them is changed will sync to the other. Only ValueController and ValueClient can observe others.
+
+```typescript
+value2.observe(value);
+```
+
+To stop observing, you can call `stopObserving` member method.
 
 ---
 

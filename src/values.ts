@@ -59,6 +59,9 @@ export class ValueObservable<T> implements DisposableArrayContract {
                 pushDisposable(...items) {
                     return disposable.pushDisposable(...items);
                 },
+                removeDisposable(...items) {
+                    return disposable.removeDisposable(...items);
+                },
                 dispose() {
                     disposable.dispose();
                 }
@@ -128,6 +131,9 @@ export class ValueObservable<T> implements DisposableArrayContract {
             },
             pushDisposable(...items) {
                 return disposable.pushDisposable(...items);
+            },
+            removeDisposable(...items) {
+                return disposable.removeDisposable(...items);
             },
             dispose() {
                 disposable.dispose();
@@ -199,6 +205,14 @@ export class ValueObservable<T> implements DisposableArrayContract {
      */
     public pushDisposable(...items: DisposableContract[]) {
         return this._instance.pushDisposable(...items);
+    }
+
+    /**
+     * Removes the ones added here.
+     * @param items  The objects to remove.
+     */
+    public removeDisposable(...items: DisposableContract[]) {
+        return this._instance.removeDisposable(...items);
     }
 
     /**
@@ -549,14 +563,24 @@ export class ValueController<T> extends ValueObservable<T> {
         return this._accessor.registerRequestHandler(type, h);
     }
 
-    public observe(value: ValueObservable<T>) {
+    /**
+     * Start to observe an observable value.
+     * @param notSyncNow  true if keep current value unless call syncFromObserved member method of this or the observable value is changed; otherwise false.
+     * @param message  A message for the setting event.
+     */
+    public observe(value: ValueObservable<T>, notSyncNow?: boolean, message?: FireInfoContract | string) {
         if (!(value instanceof ValueObservable)) return {
+            sync() {},
             dispose() {}
         };
         this._observing = value.registerChangeFlow(this._accessor.customizedSet);
+        if (!notSyncNow) this._accessor.customizedSet(value.get(), message).resolve();
         return this._observing;
     }
 
+    /**
+     * Stops observing.
+     */
     public stopObserving() {
         let disposeObserving = this._observing;
         if (!disposeObserving) return;
@@ -564,13 +588,20 @@ export class ValueController<T> extends ValueObservable<T> {
         if (typeof disposeObserving.dispose === "function") disposeObserving.dispose();
     }
 
-    public syncFromObserving(message?: FireInfoContract | string) {
+    /**
+     * Updates the value from the observed value.
+     * @param message  A message for the setting event.
+     */
+    public syncFromObserved(message?: FireInfoContract | string) {
         let disposeObserving = this._observing;
         if (!disposeObserving || typeof disposeObserving.sync !== "function") return false;
         disposeObserving.sync(message);
         return true;
     }
 
+    /**
+     * Gets a value indicating whether it is observing another observable value.
+     */
     public isObserving() {
         return !!this._observing;
     }

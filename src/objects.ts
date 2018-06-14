@@ -86,6 +86,9 @@ export class PropsObservable implements DisposableArrayContract {
                 pushDisposable(...items) {
                     return disposable.pushDisposable(...items);
                 },
+                removeDisposable(...items) {
+                    return disposable.removeDisposable(...items);
+                },
                 dispose() {
                     disposable.dispose();
                 }
@@ -225,6 +228,9 @@ export class PropsObservable implements DisposableArrayContract {
             pushDisposable(...items) {
                 return disposable.pushDisposable(...items);
             },
+            removeDisposable(...items) {
+                return disposable.removeDisposable(...items);
+            },
             dispose() {
                 disposable.dispose();
             }
@@ -267,6 +273,14 @@ export class PropsObservable implements DisposableArrayContract {
      */
     public pushDisposable(...items: DisposableContract[]) {
         return this._instance.pushDisposable(...items);
+    }
+
+    /**
+     * Removes the ones added here.
+     * @param items  The objects to remove.
+     */
+    public removeDisposable(...items: DisposableContract[]) {
+        return this._instance.removeDisposable(...items);
     }
 
     /**

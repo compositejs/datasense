@@ -193,7 +193,7 @@ export interface EventListenerControllerContract extends DisposableContract {
     removeStoreData(...propKey: string[]): number
 }
 
-export interface EventRegisterResultContract<T> extends DisposableContract {
+export interface EventRegisterResultContract<T> extends DisposableArrayContract {
     readonly key: string,
     readonly count: number,
     readonly registerDate: Date,
@@ -253,6 +253,9 @@ export class EventObservable implements DisposableArrayContract {
                 },
                 pushDisposable(...items) {
                     return disposable.pushDisposable(...items);
+                },
+                removeDisposable(...items) {
+                    return disposable.removeDisposable(...items);
                 },
                 dispose() {
                     disposable.dispose();
@@ -432,6 +435,9 @@ export class EventObservable implements DisposableArrayContract {
             pushDisposable(...items) {
                 return disposable.pushDisposable(...items);
             },
+            removeDisposable(...items) {
+                return disposable.removeDisposable(...items);
+            },
             dispose() {
                 store = {};
                 disposable.dispose();
@@ -498,6 +504,14 @@ export class EventObservable implements DisposableArrayContract {
     }
 
     /**
+     * Removes the ones added here.
+     * @param items  The objects to remove.
+     */
+    public removeDisposable(...items: DisposableContract[]) {
+        return this._instance.removeDisposable(...items);
+    }
+
+    /**
      * Registers an event listener.
      * @param key  The event key.
      * @param h  The handler or handlers of the event listener.
@@ -514,6 +528,7 @@ export class EventObservable implements DisposableArrayContract {
     ): EventRegisterResultContract<T> {
         if (!h) h = [];
         if (!(h instanceof Array)) h = [h];
+        let disposableList = new DisposableArray();
         if (!key || typeof key !== "string" || !h || !h.length) {
             let now = new Date();
             return {
@@ -527,7 +542,15 @@ export class EventObservable implements DisposableArrayContract {
                     return now;
                 },
                 fire(ev: T, message?: FireInfoContract | string) {},
-                dispose() {}
+                pushDisposable(...items) {
+                    return disposableList.push(...items);
+                },
+                removeDisposable(...items) {
+                    return disposableList.remove(...items);
+                },
+                dispose() {
+                    disposableList.dispose();
+                }
             };
         }
 
@@ -570,8 +593,15 @@ export class EventObservable implements DisposableArrayContract {
             fire(ev: T, message?: FireInfoContract | string) {
                 implInstance.fire(key, ev, message);
             },
+            pushDisposable(...items) {
+                return disposableList.push(...items);
+            },
+            removeDisposable(...items) {
+                return disposableList.remove(...items);
+            },
             dispose() {
                 implInstance.remove(key, obj);
+                disposableList.dispose();
             }
         };
         implInstance.pushDisposable(result);
@@ -622,11 +652,10 @@ export class EventObservable implements DisposableArrayContract {
             return result;
         }
 
-        let dispose = this.on(key, ev => {
+        let dispose = this.on<T>(key, ev => {
             if (typeof convertor === "function") ev = convertor(ev);
             h.call(thisArg, ev);
         });
-        this._instance.pushDisposable(dispose);
         result = function () {
             dispose.dispose();
         };
@@ -657,6 +686,7 @@ export class EventObservable implements DisposableArrayContract {
     }
 
     public static createFailedOnResult(key: string): EventRegisterResultContract<any> {
+        let disposableList = new DisposableArray();
         return {
             get key() {
                 return key;
@@ -668,16 +698,30 @@ export class EventObservable implements DisposableArrayContract {
                 return undefined;
             },
             fire(ev: any, message?: FireInfoContract | string) {},
-            dispose() {}
+            pushDisposable(...items) {
+                return disposableList.push(...items);
+            },
+            removeDisposable(...items) {
+                return disposableList.remove(...items);
+            },
+            dispose() {
+                disposableList.dispose();
+            }
         };
     }
 
+    /**
+     * Creates an empty subscribe result.
+     */
     public static createNothingSubscribe(): SubscriberCompatibleResultContract {
         let result: any = function () {};
         result.dispose = function () {};
         return result;
     }
 
+    /**
+     * Creates a single event observable for a specific element.
+     */
     public static createForElement<T extends Event>(
         dom: HTMLElement,
         eventType: string | keyof HTMLElementEventMap
@@ -697,6 +741,9 @@ export class EventObservable implements DisposableArrayContract {
     }
 }
 
+/**
+ * The observable to focus on a single event.
+ */
 export class SingleEventObservable<T> implements DisposableArrayContract {
     private _disposable = new DisposableArray();
     private _eventObservable: EventObservable;
@@ -717,6 +764,14 @@ export class SingleEventObservable<T> implements DisposableArrayContract {
      */
     public pushDisposable(...items: DisposableContract[]) {
         return this._disposable.pushDisposable(...items);
+    }
+
+    /**
+     * Removes the ones added here.
+     * @param items  The objects to remove.
+     */
+    public removeDisposable(...items: DisposableContract[]) {
+        return this._disposable.removeDisposable(...items);
     }
 
     /**
@@ -751,12 +806,23 @@ export class SingleEventObservable<T> implements DisposableArrayContract {
         return result;
     }
 
+    /**
+     * Subscribes event raised.
+     * @param h  The callback.
+     * @param thisArg  this argument for calling handler.
+     */
     public subscribe(h: (newValue: T) => void, thisArg?: any): SubscriberCompatibleResultContract {
         let result = this._eventObservable.subscribeSingle<T>(this.key, h, thisArg);
         this._disposable.push(result);
         return result;
     }
 
+    /**
+     * Subscribes event raised.
+     * @param h  The callback.
+     * @param thisArg  this argument for calling handler.
+     * @param convertor  A function to convert the event argument to the target data.
+     */
     public subscribeWithConvertor<TValue>(h: (newValue: TValue) => void, thisArg?: any, convertor?: (newValue: T) => TValue): SubscriberCompatibleResultContract {
         let result = this._eventObservable.subscribeSingle<TValue>(this.key, h, thisArg, convertor);
         this._disposable.push(result);

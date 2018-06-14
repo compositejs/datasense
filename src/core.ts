@@ -1,5 +1,9 @@
 namespace DataSense {
 
+export type SubscriberCompatibleResultContract = DisposableContract & (() => void);
+
+export type SubscriberResultContract = DisposableContract | (() => void) | SubscriberCompatibleResultContract;
+
 /**
  * Disposable instance.
  */
@@ -9,10 +13,6 @@ export interface DisposableContract {
      */
     dispose(): void;
 }
-
-export type SubscriberCompatibleResultContract = DisposableContract & (() => void);
-
-export type SubscriberResultContract = DisposableContract | (() => void) | SubscriberCompatibleResultContract;
 
 export interface KeyValueContract<T> {
     key: string;
@@ -32,6 +32,12 @@ export interface DisposableArrayContract extends DisposableContract {
      * @param items  The objects to add.
      */
     pushDisposable(...items: DisposableContract[]): number;
+
+    /**
+     * Removes the ones added here.
+     * @param items  The objects to remove.
+     */
+    removeDisposable(...items: DisposableContract[]): number;
 }
 
 /**
@@ -50,6 +56,11 @@ export class DisposableArray implements DisposableArrayContract {
         items.forEach(item => {
             if (!item || this._list.indexOf(item) >= 0) return;
             this._list.push(item);
+            if (typeof (item as DisposableArrayContract).pushDisposable === "function") (item as DisposableArrayContract).pushDisposable({
+                dispose() {
+                    Collection.remove(this._list, item);
+                }
+            });
             count++;
         });
         return count;
@@ -65,7 +76,7 @@ export class DisposableArray implements DisposableArrayContract {
 
     /**
      * Removes the ones added here.
-     * @param items  The objects to add.
+     * @param items  The objects to remove.
      */
     public remove(...items: DisposableContract[]) {
         let count = 0;
@@ -77,14 +88,41 @@ export class DisposableArray implements DisposableArrayContract {
     }
 
     /**
+     * Removes the ones added here.
+     * @param items  The objects to remove.
+     */
+    public removeDisposable(...items: DisposableContract[]) {
+        return this.remove(...items);
+    }
+
+    /**
      * Disposes the instance.
      */
     public dispose() {
-        this._list.forEach(item => {
+        let list = this._list;
+        this._list = [];
+        DisposableArray.dispose(list);
+    }
+
+    /**
+     * Disposes disposable instances.
+     */
+    public static dispose(disposable: DisposableContract | DisposableContract[]) {
+        if (!disposable) return;
+        if (!(disposable instanceof Array)) disposable = [disposable];
+        let listFailed: DisposableContract[] = [];
+        disposable.forEach(item => {
+            if (!item || typeof item.dispose !== "function") return;
+            try {
+                item.dispose();
+            } catch (ex) {
+                listFailed.push(item);
+            }
+        });
+        listFailed.forEach(item => {
             if (!item || typeof item.dispose !== "function") return;
             item.dispose();
         });
-        this._list = [];
     }
 }
 

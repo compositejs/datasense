@@ -66,8 +66,8 @@ declare namespace DataSense {
         registerPropRequestHandler(key: string, type: string, h: (owner: TValue, value: any) => void): boolean;
     }
     interface ChangeFlowRegisteredContract extends DisposableContract {
-        registeredDate: Date;
-        count: number;
+        readonly registeredDate: Date;
+        readonly count: number;
         sync(message?: FireInfoContract | string): void;
     }
 }
@@ -113,6 +113,8 @@ declare namespace DataSense.Collection {
     function remove(list: any[], item: any, compare?: CompareConditionContract): number;
 }
 declare namespace DataSense {
+    type SubscriberCompatibleResultContract = DisposableContract & (() => void);
+    type SubscriberResultContract = DisposableContract | (() => void) | SubscriberCompatibleResultContract;
     /**
      * Disposable instance.
      */
@@ -122,8 +124,6 @@ declare namespace DataSense {
          */
         dispose(): void;
     }
-    type SubscriberCompatibleResultContract = DisposableContract & (() => void);
-    type SubscriberResultContract = DisposableContract | (() => void) | SubscriberCompatibleResultContract;
     interface KeyValueContract<T> {
         key: string;
         value: T;
@@ -140,6 +140,11 @@ declare namespace DataSense {
          * @param items  The objects to add.
          */
         pushDisposable(...items: DisposableContract[]): number;
+        /**
+         * Removes the ones added here.
+         * @param items  The objects to remove.
+         */
+        removeDisposable(...items: DisposableContract[]): number;
     }
     /**
      * A container for store and manage a number of disposable object.
@@ -159,13 +164,22 @@ declare namespace DataSense {
         pushDisposable(...items: DisposableContract[]): number;
         /**
          * Removes the ones added here.
-         * @param items  The objects to add.
+         * @param items  The objects to remove.
          */
         remove(...items: DisposableContract[]): number;
+        /**
+         * Removes the ones added here.
+         * @param items  The objects to remove.
+         */
+        removeDisposable(...items: DisposableContract[]): number;
         /**
          * Disposes the instance.
          */
         dispose(): void;
+        /**
+         * Disposes disposable instances.
+         */
+        static dispose(disposable: DisposableContract | DisposableContract[]): void;
     }
 }
 declare namespace DataSense {
@@ -325,7 +339,7 @@ declare namespace DataSense {
          */
         removeStoreData(...propKey: string[]): number;
     }
-    interface EventRegisterResultContract<T> extends DisposableContract {
+    interface EventRegisterResultContract<T> extends DisposableArrayContract {
         readonly key: string;
         readonly count: number;
         readonly registerDate: Date;
@@ -355,6 +369,11 @@ declare namespace DataSense {
          * @param items  The objects to add.
          */
         pushDisposable(...items: DisposableContract[]): number;
+        /**
+         * Removes the ones added here.
+         * @param items  The objects to remove.
+         */
+        removeDisposable(...items: DisposableContract[]): number;
         /**
          * Registers an event listener.
          * @param key  The event key.
@@ -396,9 +415,18 @@ declare namespace DataSense {
          */
         dispose(): void;
         static createFailedOnResult(key: string): EventRegisterResultContract<any>;
+        /**
+         * Creates an empty subscribe result.
+         */
         static createNothingSubscribe(): SubscriberCompatibleResultContract;
+        /**
+         * Creates a single event observable for a specific element.
+         */
         static createForElement<T extends Event>(dom: HTMLElement, eventType: string | keyof HTMLElementEventMap): SingleEventObservable<T>;
     }
+    /**
+     * The observable to focus on a single event.
+     */
     class SingleEventObservable<T> implements DisposableArrayContract {
         readonly key: string;
         private _disposable;
@@ -415,6 +443,11 @@ declare namespace DataSense {
          */
         pushDisposable(...items: DisposableContract[]): number;
         /**
+         * Removes the ones added here.
+         * @param items  The objects to remove.
+         */
+        removeDisposable(...items: DisposableContract[]): number;
+        /**
          * Adds event listener.
          * @param h  The handler.
          * @param thisArg  this argument for calling handler.
@@ -428,7 +461,18 @@ declare namespace DataSense {
          * @param thisArg  this argument for calling handler.
          */
         once<T>(h: EventHandlerContract<any> | EventHandlerContract<any>[], thisArg?: any): EventRegisterResultContract<any>;
+        /**
+         * Subscribes event raised.
+         * @param h  The callback.
+         * @param thisArg  this argument for calling handler.
+         */
         subscribe(h: (newValue: T) => void, thisArg?: any): SubscriberCompatibleResultContract;
+        /**
+         * Subscribes event raised.
+         * @param h  The callback.
+         * @param thisArg  this argument for calling handler.
+         * @param convertor  A function to convert the event argument to the target data.
+         */
         subscribeWithConvertor<TValue>(h: (newValue: TValue) => void, thisArg?: any, convertor?: (newValue: T) => TValue): SubscriberCompatibleResultContract;
         /**
          * Creates an observable instance.
@@ -667,6 +711,11 @@ declare namespace DataSense {
          */
         pushDisposable(...items: DisposableContract[]): number;
         /**
+         * Removes the ones added here.
+         * @param items  The objects to remove.
+         */
+        removeDisposable(...items: DisposableContract[]): number;
+        /**
          * Gets all property keys.
          */
         getKeys(): string[];
@@ -816,12 +865,15 @@ declare namespace DataSense {
      * Object property accessing and observing client.
      */
     class PropsClient extends PropsObservable {
-        readonly proxy: any;
         private readonly _propSetter;
         private readonly _sendPropNotify;
         private readonly _sendNotify;
         private readonly _registerPropRequestHandler;
         private readonly _registerRequestHandler;
+        /**
+         * Gets the data model with two-way bindings for its properties.
+         */
+        readonly proxy: any;
         /**
          * Initializes a new instance of the PropsClient class.
          */
@@ -1198,6 +1250,11 @@ declare namespace DataSense {
          */
         pushDisposable(...items: DisposableContract[]): number;
         /**
+         * Removes the ones added here.
+         * @param items  The objects to remove.
+         */
+        removeDisposable(...items: DisposableContract[]): number;
+        /**
          * Gets the value.
          */
         get(): T;
@@ -1382,11 +1439,27 @@ declare namespace DataSense {
          * @param h  The handler to respond the request message.
          */
         registerRequestHandler(type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void): boolean;
-        observe(value: ValueObservable<T>): ChangeFlowRegisteredContract | {
+        /**
+         * Start to observe an observable value.
+         * @param notSyncNow  true if keep current value unless call syncFromObserved member method of this or the observable value is changed; otherwise false.
+         * @param message  A message for the setting event.
+         */
+        observe(value: ValueObservable<T>, notSyncNow?: boolean, message?: FireInfoContract | string): ChangeFlowRegisteredContract | {
+            sync(): void;
             dispose(): void;
         };
+        /**
+         * Stops observing.
+         */
         stopObserving(): void;
-        syncFromObserving(message?: FireInfoContract | string): boolean;
+        /**
+         * Updates the value from the observed value.
+         * @param message  A message for the setting event.
+         */
+        syncFromObserved(message?: FireInfoContract | string): boolean;
+        /**
+         * Gets a value indicating whether it is observing another observable value.
+         */
         isObserving(): boolean;
         /**
          * Creates a controller client.

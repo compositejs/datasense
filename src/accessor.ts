@@ -61,8 +61,8 @@ export interface RegisterPropRequestContract<TProps, TValue> extends RegisterReq
 }
 
 export interface ChangeFlowRegisteredContract extends DisposableContract {
-    registeredDate: Date;
-    count: number;
+    readonly registeredDate: Date;
+    readonly count: number;
     sync(message?: FireInfoContract | string): void;
 }
 
@@ -272,7 +272,7 @@ export function propsAccessor(): {
                 reject(err) {}
             };
             if (prop.updating) {
-                if (prop.updating.custom && prop.updating.value === valueRequested) return {
+                if (prop.updating.value === valueRequested) return {
                     isAborted: true,
                     resolve(finalValue) {},
                     reject(err) {}
@@ -301,9 +301,10 @@ export function propsAccessor(): {
                 return item(valueRequested, message);
             });
             obj = {
-                resolve(finalValue: any) {
+                resolve(finalValue?: any) {
                     if (done) return;
                     if (setToken !== prop.updating) return;
+                    if (arguments.length === 0) finalValue = valueRequested;
                     prop.updating = null;
                     onceC.resolve(finalValue);
                     if (oldValue === finalValue) return ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
@@ -459,10 +460,15 @@ export function propsAccessor(): {
         pushFlows(key, ...flows) {
             let now = new Date();
             flows = flows.filter(item => typeof item === "function");
-            let count = getProp(key, true).flows.push(...flows);
+            let flowArr = getProp(key, true).flows;
+            let count = flowArr.push(...flows);
             return {
-                registeredDate: now,
-                count,
+                get registeredDate() {
+                    return now
+                },
+                get count() {
+                    return count;
+                },
                 sync(message?: FireInfoContract | string) {
                     flows.forEach(item => {
                         let currentValue = changerClient.getProp(key);
@@ -472,7 +478,7 @@ export function propsAccessor(): {
                 },
                 dispose() {
                     flows.forEach(item => {
-                        Collection.remove(this._instance.observables, item);
+                        Collection.remove(flowArr, item);
                     });
                 }
             };
