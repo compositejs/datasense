@@ -73,12 +73,12 @@ value.onChanging(ev => {
     console.info(`Change to ${ev.valueRequest}.`);
 
     // And we can set a callback when done.
-    ev.observable.onResolved(newValue => {
+    ev.onResolved(newValue => {
         console.info(`New value is ${newValue}.`);
     });
 
     // And also for failure.
-    ev.observable.onRejected(err => {
+    ev.onRejected(err => {
         console.info("Something wrong.", err);
     });
 });
@@ -106,16 +106,16 @@ The result of this method has a `dispose` function to unsubscribe.
 You can define some actions so that you can just send the request to do what you expect.
 
 ```typescript
-props.registerRequestHandler("append", (acc, data) => {
-    props.set(props.get() + data);
+value.registerRequestHandler("append", (acc, data) => {
+    value.set(value.get() + data);
 });
 ```
 
 To process this action, just send a request.
 
 ```typescript
-props.sendRequest("append", " Afternoon!");
-console.info(props.get()); // "Morning! Afternoon!"
+value.sendRequest("append", " Afternoon!");
+console.info(value.get()); // "Morning! Afternoon!"
 ```
 
 ## Create observable instance

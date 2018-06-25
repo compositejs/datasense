@@ -133,14 +133,29 @@ export interface EventListenerControllerContract extends DisposableContract {
     readonly key: string;
 
     /**
+     * The original event key.
+     */
+    readonly originalKey: string;
+
+    /**
      * The count raised.
      */
     readonly count: number;
 
     /**
-     * The latest date raised.
+     * The current date raised.
      */
     readonly fireDate: Date;
+
+    /**
+     * The date railed latest.
+     */
+    readonly latestFireDate: Date | undefined;
+
+    /**
+     * The date railed at last.
+     */
+    readonly lastFireDate: Date | undefined;
 
     /**
      * The date registered.
@@ -1045,15 +1060,10 @@ export class OnceObservable<T> {
      * Creates a promise instance.
      */
     public promise(): Promise<T> {
-        let resolveH: (value: T) => void;
-        let rejectH: (reason: any) => void;
-        let p = new Promise<T>((resolve, reject) => {
-            resolveH = resolve;
-            rejectH = reject;
+        return new Promise<T>((resolve, reject) => {
+            this.onResolved(resolve);
+            this.onRejected(reject);
         });
-        this.onResolved(resolveH);
-        this.onRejected(rejectH);
-        return p;
     }
 
     /**

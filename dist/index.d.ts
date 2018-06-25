@@ -290,13 +290,25 @@ declare namespace DataSense {
          */
         readonly key: string;
         /**
+         * The original event key.
+         */
+        readonly originalKey: string;
+        /**
          * The count raised.
          */
         readonly count: number;
         /**
-         * The latest date raised.
+         * The current date raised.
          */
         readonly fireDate: Date;
+        /**
+         * The date railed latest.
+         */
+        readonly latestFireDate: Date | undefined;
+        /**
+         * The date railed at last.
+         */
+        readonly lastFireDate: Date | undefined;
         /**
          * The date registered.
          */

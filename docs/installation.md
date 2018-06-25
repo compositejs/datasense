@@ -2,7 +2,7 @@ You can install this web front-end library by npm or by downloading the bundle f
 
 ## ES6 / Type Script via npm
 
-```
+```sh
 npm i datasense
 ```
 
@@ -24,8 +24,8 @@ import * as DataSense from 'datasense';
 
 ## CommonJS via npm
 
-```
-npm install datasense
+```sh
+npm i datasense
 ```
 
 And you can require the library and patch what you needed. Following is a sample.

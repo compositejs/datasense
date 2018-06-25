@@ -1,9 +1,9 @@
-const Engine = require("./engine");
+const Engine = require("./dist/engine");
 
 Engine.run(
-    require("./events"),
-    require("./value"),
-    require("./props")
+    require("./dist/events"),
+    require("./dist/value"),
+    require("./dist/props")
 );
 
 module.exports = Engine.run;
