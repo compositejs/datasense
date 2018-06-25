@@ -1,12 +1,15 @@
 let assertCount = 0;
 
-function create(name) {
-    let list = [];
+export function create(name: string) {
+    let list: {
+        name: string,
+        h: Function
+    }[] = [];
     let client = {
         name() {
             return name;
         },
-        add(name, h) {
+        add(name: string, h: Function) {
             if (!name || typeof name !== "string" || typeof h !== "function") return;
             list.push({ name, h });
         },
@@ -48,7 +51,9 @@ function create(name) {
     return client;
 }
 
-function run(...tests) {
+export function run(...tests: {
+    run: Function
+}[]) {
     console.info("START")
     let count = {
         success: 0,
@@ -68,18 +73,18 @@ function run(...tests) {
     console.info("Result: " + count.success + " successful, " + count.failure + " failed, " + count.ignore + " ignored, costing " + count.costing + "ms.");
 }
 
-function throwError(summary, details, message) {
+function throwError(summary: string, details: string, message: string) {
     var err = "Expect " + summary + " #" + assertCount + " " + details;
-    if (message) err+= " | " + errorMessage;
+    if (message) err+= " | " + message;
     throw err;
 }
 
-let assert = {
-    equals(a, b, errorMessage) {
+export const assert = {
+    equals(a: any, b: any, errorMessage?: string) {
         if (a !== b) throwError("equal", a + " !== " + b, errorMessage);
         assertCount++;
     },
-    isTrue(a, strict, errorMessage) {
+    isTrue(a: any, strict?: boolean, errorMessage?: string) {
         if (strict) {
             if (a !== true) throwError("equals true", a, errorMessage);
         } else {
@@ -88,7 +93,7 @@ let assert = {
 
         assertCount++;
     },
-    isFalse(a, strict, errorMessage) {
+    isFalse(a: any, strict?: boolean, errorMessage?: string) {
         if (strict) {
             if (a !== false) throwError("equals false", a, errorMessage);
         } else {
@@ -97,14 +102,8 @@ let assert = {
 
         assertCount++;
     },
-    isNull(a, errorMessage) {
+    isNull(a: any, errorMessage?: string) {
         if (a != null) throwError("is null", a, errorMessage);
         assertCount++;
     }
-}
-
-module.exports = {
-    create,
-    run,
-    assert
 }

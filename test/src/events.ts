@@ -1,6 +1,6 @@
-const Engine = require("./engine");
-const DataSense = require("../index.js");
-const { create, assert } = Engine;
+import { create, assert } from "./engine"
+import * as DataSense from "../../index";
+
 const testCase = create("Events and tasks");
 
 testCase.add("Events", () => {
@@ -24,9 +24,9 @@ testCase.add("Events", () => {
     });
 
     // We can add an event listener and get details of current raising information and actions.
-    let eventArgB;
-    let eventArgB2;
-    events.on("b", (ev, listenerController) => {
+    let eventArgB: string;
+    let eventArgB2: DataSense.EventListenerControllerContract;
+    events.on<string>("b", (ev, listenerController) => {
         eventArgB = ev;
 
         // We can get an additioal message sent from raising place.
@@ -46,7 +46,7 @@ testCase.add("Events", () => {
         listenerController.setStoreData("number", 987);
 
         // We can get the count of raising and we can dispose the event listener.
-        if (listenerController.count > 3) listenerController.dispose();
+        if (listenerController.count >= 3) listenerController.dispose();
     });
 
     // Let's raise an event.
@@ -93,7 +93,7 @@ testCase.add("Events", () => {
     assert.equals(eventArgB2.addition.id, 123456);
 
     // Following will not be raised since it has disposed after 3 times raising.
-    events.fire("xyz");
+    events.fire("b", "xyz");
     assert.equals(eventArgB, "u");
 });
 
@@ -111,4 +111,4 @@ testCase.add("Tasks", () => {
     assert.equals(taskMessage, "test");
 });
 
-module.exports = testCase;
+export = testCase;

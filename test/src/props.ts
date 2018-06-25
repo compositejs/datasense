@@ -1,6 +1,6 @@
-const Engine = require("./engine");
-const DataSense = require("../index.js");
-const { create, assert } = Engine;
+import { create, assert } from "./engine"
+import * as DataSense from "../../index";
+
 const testCase = create("Props observable");
 
 testCase.add("Access", () => {
@@ -191,4 +191,4 @@ testCase.add("Property", () => {
     assert.equals(propValue.get(), undefined);
 });
 
-module.exports = testCase;
+export = testCase;

@@ -1,10 +1,10 @@
-const Engine = require("./engine");
-const DataSense = require("../index.js");
-const { create, assert } = Engine;
+import { create, assert } from "./engine"
+import * as DataSense from "../../index";
+
 const testCase = create("Value observable");
 
 testCase.add("Access", () => {
-    let value = new DataSense.ValueController();
+    let value = new DataSense.ValueController<string | number>();
 
     // Test intialized value.
     assert.equals(value.get(), undefined);
@@ -68,15 +68,15 @@ testCase.add("Access", () => {
     assert.equals(value.get(), "uvw");
 
     // We can also define some actions.
-    value.registerRequestHandler("increase", (acc, data) => {
+    value.registerRequestHandler("increase", (acc, data: number) => {
         if (value.getType() !== "number") return;
         if (data == null) data = 1;
-        if (typeof data === "number") value.set(value.get() + data);
+        if (typeof data === "number") value.set((value.get() as number) + data);
     });
     value.registerRequestHandler("decrease", (acc, data) => {
         if (value.getType() !== "number") return;
         if (data == null) data = 1;
-        if (typeof data === "number") value.set(value.get() - data);
+        if (typeof data === "number") value.set((value.get() as number) - data);
     });
 
     // It will work as the actions defined when we send the requests.
@@ -130,7 +130,7 @@ testCase.add("Subscribe", () => {
 });
 
 testCase.add("Format", () => {
-    let value = new DataSense.ValueController();
+    let value = new DataSense.ValueController<string>();
 
     // We can set the formatter and validator.
     value.formatter = newValue => {
@@ -143,8 +143,13 @@ testCase.add("Format", () => {
     };
 
     // Let's prepare something for validation below.
-    let onChangedVariables = {
-        times: 0,
+    let onChangedVariables: {
+        times: number,
+        value?: string,
+        result?: any,
+        valueRequest?: string
+    } = {
+        times: 0
     };
     onChangedVariables.result = value.onChanged(ev => {
         onChangedVariables.value = ev.value;
@@ -153,7 +158,10 @@ testCase.add("Format", () => {
     });
 
     // We can listen the failure event.
-    let onChangeFailedVariables = {
+    let onChangeFailedVariables: {
+        times: number,
+        result?: any
+    } = {
         times: 0,
     };
     onChangeFailedVariables.result = value.onChangeFailed(ev => {
@@ -161,7 +169,13 @@ testCase.add("Format", () => {
     });
 
     // We can also listen the changing event.
-    let onChangingVariables = {
+    let onChangingVariables: {
+        times: number,
+        result?: any,
+        success?: boolean | undefined,
+        value?: string,
+        valueRequest?: string
+    } = {
         times: 0,
     };
     onChangingVariables.result = value.onChanging(ev => {
@@ -367,26 +381,20 @@ testCase.add("Bindings", () => {
     let count = 0;
     value1.onChanging(ev => {
         count++;
-        console.info("value1 changing " + ev.valueRequest + " " + count);
         ev.onRejected(err => {
             count++;
-            console.info("value1 failed " + err + " " + count);
         });
         ev.onResolved(nv => {
             count++;
-            console.info("value1 succ " + nv + " " + count);
         });
     });
     value2.onChanging(ev => {
         count++;
-        console.info("value2 changing " + ev.valueRequest + " " + count);
         ev.onRejected(err => {
             count++;
-            console.info("value2 failed " + err + " " + count);
         });
         ev.onResolved(nv => {
             count++;
-            console.info("value2 succ " + nv + " " + count);
         });
     });
     value1.set("opq");
@@ -420,4 +428,4 @@ testCase.add("Bindings", () => {
     assert.equals(value2.get(), "uvw");
 });
 
-module.exports = testCase;
+export = testCase;
