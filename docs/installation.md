@@ -40,7 +40,7 @@ console.info(`The name is ${props.getProp("name")}.`);
 
 ## Insert script file
 
-You can download the [bundle file](./dist/index.js) and insert it into your web page, then you can use the global namespace `DataSense`. Following is a sample.
+You can download the [JavaScript bundle file](../dist/index.js) and insert it into your web page by `script` tag, then you can use the global namespace `DataSense`. Following is a sample.
 
 ```typescript
 const { PropsController } = DataSense;

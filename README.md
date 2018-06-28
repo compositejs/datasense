@@ -10,7 +10,7 @@ You can install this by [npm](https://www.npmjs.com/package/datasense).
 npm i datasense
 ```
 
-And you can also insert the JavaScript bundled file by script tag into your web page directly.
+And you can also insert the JavaScript bundled file by `script` tag into your web page directly.
 
 [Click here](https://github.com/compositejs/datasense/wiki/installation) to read more.
 

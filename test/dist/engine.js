@@ -71,6 +71,8 @@ function run(...tests) {
     console.info("-----------------");
     console.info("DONE");
     console.info("Result: " + count.success + " successful, " + count.failure + " failed, " + count.ignore + " ignored, costing " + count.costing + "ms.");
+    if (count.failure > 0)
+        throw new Error("Oops, " + count.failure + " test cases failed.");
 }
 exports.run = run;
 function throwError(summary, details, message) {
