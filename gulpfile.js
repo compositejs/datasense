@@ -1,15 +1,17 @@
-var gulp = require('gulp');
-var ts = require("gulp-typescript");
-var uglify = require('gulp-uglify');
-var sourcemaps = require('gulp-sourcemaps');
-var paths = {
+const gulp = require('gulp');
+const ts = require("gulp-typescript");
+const uglify = require('gulp-uglify');
+const sourcemaps = require('gulp-sourcemaps');
+const paths = {
     pages: ['pages/*.html']
 };
 
-gulp.task('copyHtml', function () {
+/* Functions in pipeline */
+
+function copyHtml() {
     return gulp.src(paths.pages)
         .pipe(gulp.dest('dist'));
-});
+}
 
 function buildTs() {
     var tsProject = ts.createProject("src/tsconfig.json");
@@ -18,7 +20,7 @@ function buildTs() {
         .js.pipe(gulp.dest("dist"))
         .pipe(uglify())
         .pipe(gulp.dest("dist"));
-};
+}
 
 function buildTestTs() {
     var tsProject = ts.createProject("test/src/tsconfig.json");
@@ -27,12 +29,8 @@ function buildTestTs() {
         .js.pipe(gulp.dest("test/dist"))
 };
 
-gulp.task('build', function () {
-    return buildTs();
-});
-
-gulp.task('test', ['build'], function () {
-    return buildTestTs(true);
-});
-
-gulp.task('default', ['test']);
+/* Tasks */
+gulp.task('copyHtml', copyHtml);
+gulp.task('build', buildTs);
+gulp.task('test', gulp.series(buildTs, buildTestTs));
+gulp.task('default', gulp.series(buildTs, buildTestTs));
