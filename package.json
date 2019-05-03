@@ -28,9 +28,9 @@
   "homepage": "https://github.com/compositejs/datasense/wiki",
   "devDependencies": {
     "gulp": "^3.9.1",
-    "gulp-sourcemaps": "^2.6.4",
-    "gulp-typescript": "^4.0.2",
-    "gulp-uglify": "^3.0.0",
-    "typescript": "^2.9.1"
+    "gulp-sourcemaps": "^2.6.5",
+    "gulp-typescript": "^5.0.1",
+    "gulp-uglify": "^3.0.2",
+    "typescript": "^3.4.5"
   }
 }
