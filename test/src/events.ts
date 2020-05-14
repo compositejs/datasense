@@ -99,7 +99,7 @@ testCase.add("Events", () => {
 
 testCase.add("Tasks", () => {
     let task = new DataSense.HitTask();
-    let taskMessage;
+    let taskMessage: any;
     task.pushHandler((arg, o) => {
         taskMessage = arg;
     });

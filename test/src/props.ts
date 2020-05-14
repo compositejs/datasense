@@ -4,7 +4,7 @@ import * as DataSense from "../../index";
 const testCase = create("Props observable");
 
 testCase.add("Access", () => {
-    var obj = new DataSense.PropsController();
+    let obj = new DataSense.PropsController();
 
     // We can set a property.
     obj.setProp("name", "abc");
@@ -13,9 +13,9 @@ testCase.add("Access", () => {
     assert.isTrue(obj.hasProp("name"));
     assert.equals(obj.getProp("name"), "abc");
 
-    // Add an event listener after the value is changed.
-    var nextValue;
-    obj.onPropChanged("name", ev => {
+    // Add an event listener occurred after the value is changed.
+    let nextValue: string;
+    obj.onPropChanged<string>("name", ev => {
         assert.equals(ev.key, "name");
 
         // For test, we record the new value.
@@ -24,7 +24,7 @@ testCase.add("Access", () => {
     obj.setProp("name", "defg");
     assert.equals(nextValue, "defg");
 
-    // We can set and get a number of property.
+    // We can set and get a number of the property.
     obj.setProp("key", "hijk");
     obj.setProp("more", "lmn");
     assert.equals(obj.getProp("key"), "hijk");
@@ -49,7 +49,7 @@ testCase.add("Access", () => {
     assert.isFalse(obj.hasProp("more"));
     assert.equals(obj.getProp("more"), undefined);
 
-    // Get all props.
+    // Get all properties.
     var keys = obj.getKeys();
     assert.equals(keys.length, 3);
     assert.equals(keys[0], "name");
@@ -118,7 +118,7 @@ testCase.add("Observable", () => {
     assert.equals(obs.getProp("key"), "opq");
 
     // The controller and client can send notify to all.
-    let notifyMessage;
+    let notifyMessage: string;
     obs.onNotifyReceived(ev => {
         notifyMessage = ev;
     });
