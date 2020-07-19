@@ -377,7 +377,6 @@ export function propsAccessor(): {
 
             changeSet.forEach(action => {
                 if (!action || !action.action) return;
-                let actionResult: ChangedInfo<any>[];
                 switch (action.action) {
                     case "delete":
                         pushChanged(...removeProp(action.key, message));

@@ -42,3 +42,9 @@ npm test
 ## Readme in other languages
 
 - [简体中文](https://github.com/compositejs/datasense/wiki/shuoming)
+
+## License
+
+This project is [MIT Licensed](./LICENSE).
+
+Please feel free to import this into your project. And you can also clone or fork the repository as you want.
