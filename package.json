@@ -5,7 +5,7 @@
   "main": "index.js",
   "types": "./index.d.ts",
   "scripts": {
-    "build": "gulp",
+    "build": "tsc --project ./src/tsconfig.json && gulp",
     "test": "node ./test/index.js"
   },
   "repository": {

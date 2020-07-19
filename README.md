@@ -30,7 +30,7 @@ Following are the key features that you can click to read more. The samples are 
 You may need install Gulp to build. Following is the command line to build this project including the source and test cases.
 
 ```sh
-gulp
+npm run-script build
 ```
 
 You can run all test cases after building by following command line.
