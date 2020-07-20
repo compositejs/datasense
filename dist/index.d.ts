@@ -529,15 +529,15 @@ declare namespace DataSense {
         /**
          * Gets a value indicating whether it is pending.
          */
-        readonly isPending: boolean;
+        get isPending(): boolean;
         /**
          * Gets a value indicating whether it is successful.
          */
-        readonly isSuccessful: boolean;
+        get isSuccessful(): boolean;
         /**
          * Gets a value indicating whether it is failed.
          */
-        readonly isFailed: boolean;
+        get isFailed(): boolean;
         /**
          * Added a callback when the result is resolved.
          * @param h  The callback.
@@ -654,7 +654,7 @@ declare namespace DataSense {
         /**
          * Gets a value indicating whether the value has been changed.
          */
-        readonly hasChanged: boolean;
+        get hasChanged(): boolean;
         static success<T>(key: string, value: T, oldValue: T, action?: ChangeActionContract | boolean, valueRequest?: T, error?: any): ChangedInfo<T>;
         static fail<T>(key: string, value: T, valueRequest: T, error?: any): ChangedInfo<T>;
         static push(list: ChangedInfo<any>[], ...items: ChangedInfo<any>[]): void;
@@ -959,17 +959,19 @@ declare namespace DataSense {
         /**
          * Gets the formatter/convertor.
          */
+        get formatter(): (key: string, value: any) => any;
         /**
-        * Sets the formatter/convertor.
-        */
-        formatter: (key: string, value: any) => any;
+         * Sets the formatter/convertor.
+         */
+        set formatter(h: (key: string, value: any) => any);
         /**
          * Gets the validator.
          */
+        get validator(): (key: string, value: any) => boolean;
         /**
-        * Sets the validator.
-        */
-        validator: (key: string, value: any) => boolean;
+         * Sets the validator.
+         */
+        set validator(h: (key: string, value: any) => boolean);
         /**
          * Initializes a new instance of the PropsController class.
          */
@@ -1273,7 +1275,7 @@ declare namespace DataSense {
         /**
          * Gets the type of value.
          */
-        getType(): "string" | "number" | "boolean" | "symbol" | "undefined" | "object" | "function";
+        getType(): "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function";
         /**
          * Checks if the value is instance of a specific type.
          */
@@ -1404,17 +1406,19 @@ declare namespace DataSense {
         /**
          * Gets the formatter/convertor.
          */
+        get formatter(): (value: any) => T;
         /**
-        * Sets the formatter/convertor.
-        */
-        formatter: (value: any) => T;
+         * Sets the formatter/convertor.
+         */
+        set formatter(h: (value: any) => T);
         /**
          * Gets the validator.
          */
+        get validator(): (value: T) => boolean;
         /**
-        * Sets the validator.
-        */
-        validator: (value: T) => boolean;
+         * Sets the validator.
+         */
+        set validator(h: (value: T) => boolean);
         /**
          * Initializes a new instance of the ValueController class.
          */

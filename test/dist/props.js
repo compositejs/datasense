@@ -3,14 +3,14 @@ const engine_1 = require("./engine");
 const DataSense = require("../../index");
 const testCase = engine_1.create("Props observable");
 testCase.add("Access", () => {
-    var obj = new DataSense.PropsController();
+    let obj = new DataSense.PropsController();
     // We can set a property.
     obj.setProp("name", "abc");
     // And we can check and get the property.
     engine_1.assert.isTrue(obj.hasProp("name"));
     engine_1.assert.equals(obj.getProp("name"), "abc");
-    // Add an event listener after the value is changed.
-    var nextValue;
+    // Add an event listener occurred after the value is changed.
+    let nextValue;
     obj.onPropChanged("name", ev => {
         engine_1.assert.equals(ev.key, "name");
         // For test, we record the new value.
@@ -18,7 +18,7 @@ testCase.add("Access", () => {
     });
     obj.setProp("name", "defg");
     engine_1.assert.equals(nextValue, "defg");
-    // We can set and get a number of property.
+    // We can set and get a number of the property.
     obj.setProp("key", "hijk");
     obj.setProp("more", "lmn");
     engine_1.assert.equals(obj.getProp("key"), "hijk");
@@ -39,7 +39,7 @@ testCase.add("Access", () => {
     obj.removeProp("more");
     engine_1.assert.isFalse(obj.hasProp("more"));
     engine_1.assert.equals(obj.getProp("more"), undefined);
-    // Get all props.
+    // Get all properties.
     var keys = obj.getKeys();
     engine_1.assert.equals(keys.length, 3);
     engine_1.assert.equals(keys[0], "name");
