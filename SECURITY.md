@@ -5,6 +5,7 @@
 See [releases](https://github.com/datasense/hje/releases) or [npm](https://www.npmjs.com/package/datasense) to get details about each release.
 
 - v1.0
+- v1.1
 
 ## Reporting a Vulnerability
 
