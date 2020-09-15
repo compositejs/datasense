@@ -376,6 +376,7 @@ export class ValueObservable<T> implements DisposableArrayContract {
  */
 export class ValueClient<T> extends ValueObservable<T> {
     private readonly _setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>;
+    private readonly _forceUpdate: (message?: FireInfoContract | string) => void;
     private readonly _sendNotify: (data: any, message?: FireInfoContract | string) => void;
     private readonly _registerRequestHandler: (type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) => boolean;
 
@@ -388,7 +389,8 @@ export class ValueClient<T> extends ValueObservable<T> {
         setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>,
         sendNotify: (data: any, message?: FireInfoContract | string) => void,
         registerRequestHandler: (type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) => boolean,
-        additionalEvents: ValueFurtherEventsContract
+        additionalEvents: ValueFurtherEventsContract,
+        forceUpdate?: (message?: FireInfoContract | string) => void
     ) {
         let h = (acc: ValueObservableAccessorContract<T>) => {
             acc.set(defaultValue);
@@ -400,6 +402,7 @@ export class ValueClient<T> extends ValueObservable<T> {
         if (typeof setter === "function") this._setter = setter;
         if (typeof sendNotify === "function") this._sendNotify = sendNotify;
         if (typeof registerRequestHandler === "function") this._registerRequestHandler = registerRequestHandler;
+        if (typeof forceUpdate === "function") this._forceUpdate = forceUpdate;
     }
 
     /**
@@ -445,6 +448,15 @@ export class ValueClient<T> extends ValueObservable<T> {
         return Access.setSubscribe((value, message?) => {
             return this.setForDetails(value, message);
         }, value, message, callbackfn, thisArg);
+    }
+
+    /**
+     * Forces to notify the update event.
+     * @param message  A message for the setting event.
+     */
+    public forceUpdate(message?: FireInfoContract | string) {
+        if (typeof this._forceUpdate !== "function") return;
+        this._forceUpdate(message);
     }
 
     /**
@@ -555,6 +567,14 @@ export class ValueController<T> extends ValueObservable<T> {
     }
 
     /**
+     * Forces to notify the update event.
+     * @param message  A message for the setting event.
+     */
+    public forceUpdate(message?: FireInfoContract | string) {
+        this._accessor.forceUpdate(message);
+    }
+
+    /**
      * Registers a handler to respond the request message.
      * @param type  The request type.
      * @param h  The handler to respond the request message.
@@ -635,6 +655,8 @@ export class ValueController<T> extends ValueObservable<T> {
             notifyReceived: this.notifyReceived.createObservable(),
             sendRequest,
             sendBroadcast
+        }, (message?) => {
+            this.forceUpdate(message);
         });
         client.pushDisposable(token);
         this.pushDisposable(client);

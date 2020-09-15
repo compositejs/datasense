@@ -981,6 +981,8 @@ export class PropsController extends PropsObservable {
             notifyReceived: this.propNotifyReceived.createSingleObservable(key),
             sendRequest,
             sendBroadcast
+        }, (message?) => {
+            this.forceUpdateProp(key, message);
         });
         client.pushDisposable(token);
         return client;

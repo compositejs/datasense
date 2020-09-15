@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.assert = exports.run = exports.create = void 0;
 let assertCount = 0;
 function create(name) {
     let list = [];

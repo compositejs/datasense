@@ -1352,12 +1352,13 @@ declare namespace DataSense {
      */
     class ValueClient<T> extends ValueObservable<T> {
         private readonly _setter;
+        private readonly _forceUpdate;
         private readonly _sendNotify;
         private readonly _registerRequestHandler;
         /**
          * Initializes a new instance of the ValueClient class.
          */
-        constructor(defaultValue: T, modifier: (setter: ValueModifierContract<T>) => void, setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>, sendNotify: (data: any, message?: FireInfoContract | string) => void, registerRequestHandler: (type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) => boolean, additionalEvents: ValueFurtherEventsContract);
+        constructor(defaultValue: T, modifier: (setter: ValueModifierContract<T>) => void, setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>, sendNotify: (data: any, message?: FireInfoContract | string) => void, registerRequestHandler: (type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) => boolean, additionalEvents: ValueFurtherEventsContract, forceUpdate?: (message?: FireInfoContract | string) => void);
         /**
          * Sets value.
          * @param value  The value of the property to set.
@@ -1384,6 +1385,11 @@ declare namespace DataSense {
          * @param callbackfn  A function will be called on subscribed.
          */
         setSubscribe(value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any): SubscriberResultContract;
+        /**
+         * Forces to notify the update event.
+         * @param message  A message for the setting event.
+         */
+        forceUpdate(message?: FireInfoContract | string): void;
         /**
          * Send a notification.
          * @param data  The data.
@@ -1449,6 +1455,11 @@ declare namespace DataSense {
          * @param callbackfn  A function will be called on subscribed.
          */
         setSubscribe(value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any): SubscriberResultContract;
+        /**
+         * Forces to notify the update event.
+         * @param message  A message for the setting event.
+         */
+        forceUpdate(message?: FireInfoContract | string): void;
         /**
          * Registers a handler to respond the request message.
          * @param type  The request type.
