@@ -666,9 +666,6 @@ export class PropsClient extends PropsObservable {
             },
             ownKeys: (target) => {
                 return this.getKeys();
-            },
-            enumerate: (target) => {
-                return this.getKeys();                    
             }
         });
     }
@@ -828,9 +825,6 @@ export class PropsController extends PropsObservable {
             },
             ownKeys: (target) => {
                 return this.getKeys();
-            },
-            enumerate: (target) => {
-                return this.getKeys();                    
             }
         });
     }
