@@ -59,6 +59,7 @@ declare namespace DataSense {
         getPropStore(key: string, storePropKey: string): any;
         setPropStore(key: string, storePropKey: string, value: any): void;
         removePropStore(key: string, ...storePropKey: string[]): void;
+        getPropUpdateTime(key: string): Date | undefined;
         sendPropNotify(key: string, data: any, message?: FireInfoContract | string): void;
         sendNotify(data: any, message?: FireInfoContract | string): void;
     }
@@ -92,6 +93,9 @@ declare namespace DataSense.Access {
         anyPropChanging: SingleEventObservable<ChangingInfo<any>>;
         anyPropChanged: SingleEventObservable<ChangedInfo<any>>;
         anyPropChangeFailed: SingleEventObservable<ChangedInfo<any>>;
+        emptyPropRequested: SingleEventObservable<{
+            key: string;
+        }>;
         propsChanged: SingleEventObservable<ChangedInfoSetContract>;
     };
 }
@@ -700,6 +704,9 @@ declare namespace DataSense {
         readonly anyPropChanging: SingleEventObservable<ChangingInfo<any>>;
         readonly anyPropChanged: SingleEventObservable<ChangedInfo<any>>;
         readonly anyPropChangeFailed: SingleEventObservable<ChangedInfo<any>>;
+        readonly emptyPropRequested: SingleEventObservable<{
+            key: string;
+        }>;
         /**
          * The event raised after a set of property have been changed.
          */
@@ -741,6 +748,7 @@ declare namespace DataSense {
          * @param key  The property key.
          */
         getProp(key: string): any;
+        getPropUpdateTime(key: string): Date | undefined;
         registerChangeFlow(key: string, ...value: ValueModifierContract<any>[]): ChangeFlowRegisteredContract;
         clearChangeFlow(key: string): number;
         /**
@@ -1024,6 +1032,25 @@ declare namespace DataSense {
          * @param message  A message for the setting event.
          */
         setProps(obj: any | PropUpdateActionContract<any>[], message?: FireInfoContract | string): void;
+        /**
+         * Gets additional store information.
+         * @param key  The property key.
+         * @param storePropKey  The key of additional information.
+         */
+        getPropStore(key: string, storePropKey: string): any;
+        /**
+         * Sets additional store information.
+         * @param key  The property key.
+         * @param storePropKey  The key of additional information.
+         * @param value  The value of additonal information.
+         */
+        setPropStore(key: string, storePropKey: string, value: any): void;
+        /**
+         * Removes the specific additional store information.
+         * @param key  The property key.
+         * @param storePropKeys  The key of additional information.
+         */
+        removePropStore(key: string, ...storePropKeys: string[]): void;
         /**
          * Send a notification for a speicific property.
          * @param key  The property key.

@@ -52,6 +52,7 @@ export interface PropsAccessorContract extends SimplePropsAccessorContract {
     getPropStore(key: string, storePropKey: string): any;
     setPropStore(key: string, storePropKey: string, value: any): void;
     removePropStore(key: string, ...storePropKey: string[]): void;
+    getPropUpdateTime(key: string): Date | undefined;
     sendPropNotify(key: string, data: any, message?: FireInfoContract | string): void;
     sendNotify(data: any, message?: FireInfoContract | string): void;
 }
@@ -112,6 +113,7 @@ export function propsAccessor(): {
     anyPropChanging: SingleEventObservable<ChangingInfo<any>>,
     anyPropChanged: SingleEventObservable<ChangedInfo<any>>,
     anyPropChangeFailed: SingleEventObservable<ChangedInfo<any>>,
+    emptyPropRequested: SingleEventObservable<{ key: string }>,
     propsChanged: SingleEventObservable<ChangedInfoSetContract>
 } {
     let store: any = {};
@@ -125,7 +127,8 @@ export function propsAccessor(): {
         store: any,
         flows: ValueModifierContract<any>[],
         updating?: { value: any, custom?: boolean, cancel(err: any): void },
-        factory: any
+        factory: any,
+        updated: Date,
     } => {
         if (!key || typeof key !== "string") return undefined;
         let obj = store[key];
@@ -139,6 +142,7 @@ export function propsAccessor(): {
             if (ensure) store[key] = obj;
         }
 
+        eventManager.fire("prop-empty", { key });
         return obj;
     };
     let formatter: ((key: string, value: any) => any);
@@ -194,6 +198,7 @@ export function propsAccessor(): {
         }
 
         prop.updating = null;
+        prop.updated = new Date();
         prop.value = value;
         onceC.resolve(value);
         if (oldValue === value) return ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
@@ -236,6 +241,7 @@ export function propsAccessor(): {
             }
 
             prop.updating = null;
+            prop.updated = new Date();
             delete prop.value;
             let info = ChangedInfo.success(key, undefined, oldValue);
             result.push(info);
@@ -308,6 +314,7 @@ export function propsAccessor(): {
                     prop.updating = null;
                     onceC.resolve(finalValue);
                     if (oldValue === finalValue) return ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
+                    prop.updated = new Date();
                     prop.value = finalValue;
                     let info = ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
                     eventManager.fire("ed-" + key, info);
@@ -339,6 +346,7 @@ export function propsAccessor(): {
                     if (!propExist) return;
                     onceC.resolve(undefined);
                     if (oldValue === undefined) return ChangedInfo.success(key, undefined, oldValue, "remove", valueRequested);
+                    prop.updated = new Date();
                     delete prop.value;
                     let info = ChangedInfo.success(key, undefined, oldValue, "remove", valueRequested);
                     eventManager.fire("ed-" + key, info);
@@ -428,10 +436,16 @@ export function propsAccessor(): {
             getProp(key, true).store[storePropKey] = value;
         },
         removePropStore(key, ...storePropKey) {
-            let prop = getProp(key, false).store;
+            let propInfo = getProp(key, false);
+            if (!propInfo) return;
+            let prop = propInfo.store;
             storePropKey.forEach(storePropKey => {
-                delete prop.value;
+                delete prop.store[storePropKey];
             });
+        },
+        getPropUpdateTime(key) {
+            let propInfo = getProp(key, false);
+            return propInfo ? propInfo.updated : undefined;
         },
         sendPropNotify(key, data, message?) {
             if (!key || typeof key !== "string") return;
@@ -515,6 +529,7 @@ export function propsAccessor(): {
         anyPropChanging: eventManager.createSingleObservable("prop-changing"),
         anyPropChanged: eventManager.createSingleObservable("prop-changed"),
         anyPropChangeFailed: eventManager.createSingleObservable("prop-failed"),
+        emptyPropRequested: eventManager.createSingleObservable("prop-empty"),
         propsChanged: eventManager.createSingleObservable("batch-changed")
     }
 }

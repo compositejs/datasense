@@ -1,6 +1,6 @@
 {
   "name": "datasense",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "A set of powerful utilities and classes for accessing and observing data.",
   "main": "index.js",
   "types": "./index.d.ts",
@@ -31,6 +31,6 @@
     "gulp-sourcemaps": "^3.0.0",
     "gulp-typescript": "^5.0.1",
     "gulp-uglify": "^3.0.2",
-    "typescript": "^4.2.2"
+    "typescript": "^5.1.6"
   }
 }

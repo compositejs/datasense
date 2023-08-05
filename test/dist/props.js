@@ -1,7 +1,7 @@
 "use strict";
 const engine_1 = require("./engine");
 const DataSense = require("../../index");
-const testCase = engine_1.create("Props observable");
+const testCase = (0, engine_1.create)("Props observable");
 testCase.add("Access", () => {
     let obj = new DataSense.PropsController();
     // We can set a property.

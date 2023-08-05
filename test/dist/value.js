@@ -1,7 +1,7 @@
 "use strict";
 const engine_1 = require("./engine");
 const DataSense = require("../../index");
-const testCase = engine_1.create("Value observable");
+const testCase = (0, engine_1.create)("Value observable");
 testCase.add("Access", () => {
     let value = new DataSense.ValueController();
     // Test intialized value.

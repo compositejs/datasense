@@ -1,7 +1,7 @@
 "use strict";
 const engine_1 = require("./engine");
 const DataSense = require("../../index");
-const testCase = engine_1.create("Events and tasks");
+const testCase = (0, engine_1.create)("Events and tasks");
 testCase.add("Events", () => {
     let events = new DataSense.EventController();
     // We can add an event listener and it will return a disposable instance.

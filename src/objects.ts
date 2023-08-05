@@ -19,6 +19,7 @@ export class PropsObservable implements DisposableArrayContract {
     private _instance: {
         has(key: string): boolean,
         get(key: string): any,
+        getUpdateTime(key: string): Date | undefined,
         keys(): string[],
         pushFlows(key: string, ...flows: ValueModifierContract<any>[]): ChangeFlowRegisteredContract,
         clearFlows(key: string): number,
@@ -58,6 +59,8 @@ export class PropsObservable implements DisposableArrayContract {
     public readonly anyPropChanged: SingleEventObservable<ChangedInfo<any>>;
 
     public readonly anyPropChangeFailed: SingleEventObservable<ChangedInfo<any>>;
+
+    public readonly emptyPropRequested: SingleEventObservable<{ key: string }>;
 
     /**
      * The event raised after a set of property have been changed.
@@ -101,6 +104,7 @@ export class PropsObservable implements DisposableArrayContract {
             this.anyPropChanging = changer.anyPropChanging.createObservable();
             this.anyPropChanged = changer.anyPropChanged.createObservable();
             this.anyPropChangeFailed = changer.anyPropChangeFailed.createObservable();
+            this.emptyPropRequested = changer.emptyPropRequested.createObservable();
             this.propsChanged = changer.propsChanged.createObservable();
             this.broadcastReceived = changer.broadcastReceived.createObservable();
             this.notifyReceived = changer.notifyReceived.createObservable();
@@ -113,6 +117,7 @@ export class PropsObservable implements DisposableArrayContract {
                 this.anyPropChanging,
                 this.anyPropChanged,
                 this.anyPropChangeFailed,
+                this.emptyPropRequested,
                 this.propsChanged,
                 this.broadcastReceived,
                 this.notifyReceived
@@ -130,6 +135,7 @@ export class PropsObservable implements DisposableArrayContract {
         this.anyPropChanging = obj.anyPropChanging;
         this.anyPropChanged = obj.anyPropChanged;
         this.anyPropChangeFailed = obj.anyPropChangeFailed;
+        this.emptyPropRequested = obj.emptyPropRequested;
         this.propsChanged = obj.propsChanged;
         this.broadcastReceived = obj.broadcastReceived;
         this.notifyReceived = obj.notifyReceived;
@@ -142,6 +148,7 @@ export class PropsObservable implements DisposableArrayContract {
             this.anyPropChanging,
             this.anyPropChanged,
             this.anyPropChangeFailed,
+            this.emptyPropRequested,
             this.propsChanged,
             this.broadcastReceived,
             this.notifyReceived
@@ -203,6 +210,9 @@ export class PropsObservable implements DisposableArrayContract {
             },
             get(key) {
                 return obj.accessor.getProp(key);
+            },
+            getUpdateTime(key) {
+                return obj.accessor.getPropUpdateTime(key);
             },
             keys() {
                 return obj.accessor.getPropKeys();
@@ -304,6 +314,10 @@ export class PropsObservable implements DisposableArrayContract {
      */
     public getProp(key: string) {
         return this._instance.get(key);
+    }
+
+    public getPropUpdateTime(key: string): Date | undefined {
+        return this._instance.getUpdateTime(key);
     }
 
     public registerChangeFlow(key: string, ...value: ValueModifierContract<any>[]) {
@@ -901,6 +915,34 @@ export class PropsController extends PropsObservable {
      */
     public setProps(obj: any | PropUpdateActionContract<any>[], message?: FireInfoContract | string) {
         return this._accessor.batchProp(obj, message);
+    }
+
+    /**
+     * Gets additional store information.
+     * @param key  The property key.
+     * @param storePropKey  The key of additional information.
+     */
+    public getPropStore(key: string, storePropKey: string) {
+        return this._accessor.getPropStore(key, storePropKey);
+    }
+
+    /**
+     * Sets additional store information.
+     * @param key  The property key.
+     * @param storePropKey  The key of additional information.
+     * @param value  The value of additonal information.
+     */
+    public setPropStore(key: string, storePropKey: string, value: any) {
+        this._accessor.setPropStore(key, storePropKey, value);
+    }
+
+    /**
+     * Removes the specific additional store information.
+     * @param key  The property key.
+     * @param storePropKeys  The key of additional information.
+     */
+    public removePropStore(key: string, ...storePropKeys: string[]) {
+        this._accessor.removePropStore(key, ...storePropKeys);
     }
 
     /**
