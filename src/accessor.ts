@@ -121,7 +121,7 @@ function isExpired(cacheOptions: CacheOptionsContract, updateTime: Date) {
     return now.getTime() > (updateTime.getTime() + cacheOptions.expiresIn);
 }
 
-function convertToDetails(key: string, prop: PropInfoContract) {
+function convertToDetails<T>(key: string, prop: PropInfoContract): PropDetailsContract<T> {
     return {
         hasValue: (prop as Object).hasOwnProperty("value"),
         key: key,
@@ -366,10 +366,10 @@ export function propsAccessor(): {
 
             return prop ? prop.value : undefined;
         },
-        getPropDetails(key) {
+        getPropDetails<T>(key: string) {
             let prop = getProp(key, false);
             notifyUndefinedProp(prop, key);
-            return convertToDetails(key, prop);
+            return convertToDetails<T>(key, prop);
         },
         setProp(key, value, message?) {
             let info = setProp(key, value, message, false, true);

@@ -859,6 +859,25 @@ export class PropsController extends PropsObservable {
         });
     }
 
+    public getPropWithFallback<T>(key: string, resolver: (details: PropDetailsContract<T>) => Promise<T>, options?: {
+        testBeforeSet?: boolean;
+        callback?: (details: PropDetailsContract<T>) => void;
+    }) {
+        let prop = this._accessor.getPropDetails<T>(key);
+        if (!options) options = {};
+        if (typeof options.callback === "function") options.callback(prop);
+        if (prop.hasValue) return Promise.resolve(prop.value);
+        return resolver(prop).then(value => {
+            if (options.testBeforeSet) {
+                prop = this._accessor.getPropDetails(key);
+                if (prop.hasValue) return prop.value;
+            }
+
+            this._accessor.setProp(key, value);
+            return value;
+        });
+    }
+
     /**
      * Force to update a property.
      * @param key  The property key.
