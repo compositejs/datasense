@@ -72,6 +72,10 @@ testCase.add("Access", () => {
 });
 testCase.add("Observable", () => {
     let obj = new DataSense.PropsController();
+    let emptyKey;
+    obj.emptyPropRequested.on(ev => {
+        emptyKey = ev.key;
+    });
     // Set a property.
     obj.setProp("name", "abcdefg");
     // We can create a client so that we can access value and add event listeners.
@@ -79,6 +83,9 @@ testCase.add("Observable", () => {
     engine_1.assert.isTrue(client.hasProp("name"));
     engine_1.assert.equals(client.getProp("name"), "abcdefg");
     engine_1.assert.isFalse(client.hasProp("key"));
+    engine_1.assert.isNull(emptyKey);
+    engine_1.assert.isNull(client.getProp("key"));
+    engine_1.assert.equals("key", emptyKey);
     // We can create an observable to add event listeners.
     let obs = obj.createObservable();
     engine_1.assert.isTrue(obs.hasProp("name"));

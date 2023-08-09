@@ -7,12 +7,12 @@ declare namespace DataSense {
         remove?(): void;
     }
     interface SimpleValueAccessorContract<T> {
-        get(): T;
-        set(value: T, message?: FireInfoContract | string): ChangedInfo<T> | undefined;
+        get(options?: GetterOptionsContract): T;
+        set(value: T, message?: SetterOptionsContract | string): ChangedInfo<T> | undefined;
         forceUpdate(message?: FireInfoContract | string): void;
     }
     interface ValueAccessorContract<T> extends SimpleValueAccessorContract<T> {
-        customizedSet(valueRequested: any, message?: FireInfoContract | string): ValueResolveContract<T>;
+        customizedSet(valueRequested: any, message?: SetterOptionsContract | string): ValueResolveContract<T>;
         getFormatter(): (value: any) => T;
         setFormatter(h: (value: any) => T): void;
         getValidator(): (value: T) => boolean;
@@ -41,17 +41,30 @@ declare namespace DataSense {
         action: "batch";
         value?: any;
     });
+    interface PropDetailsContract<T> {
+        hasValue: boolean;
+        key: string;
+        value: T;
+        store: {
+            [property: string]: any;
+        };
+        cacheOptions: CacheOptionsContract | undefined;
+        updateTime: Date | undefined;
+        requestHandlerTypes: string[];
+        flowCount: number;
+    }
     interface SimplePropsAccessorContract {
         hasProp(key: string): boolean;
-        getProp(key: string): any;
-        setProp(key: string, value: any, message?: FireInfoContract | string): ChangedInfo<any>;
+        getProp(key: string, options?: GetterOptionsContract): any;
+        setProp(key: string, value: any, message?: SetterOptionsContract | string): ChangedInfo<any>;
         removeProp(keys: string | string[], message?: FireInfoContract | string): number;
         batchProp(changeSet: any | PropUpdateActionContract<any>[], message?: FireInfoContract | string): void;
         forceUpdateProp(key: string, message?: FireInfoContract | string): void;
         getPropKeys(): string[];
     }
     interface PropsAccessorContract extends SimplePropsAccessorContract {
-        customizedSetProp(key: string, valueRequested: any, message?: FireInfoContract | string): ValueResolveContract<any>;
+        getPropDetails<T>(key: string): PropDetailsContract<T>;
+        customizedSetProp(key: string, valueRequested: any, message?: SetterOptionsContract | string): ValueResolveContract<any>;
         getFormatter(): (key: string, value: any) => any;
         setFormatter(h: (key: string, value: any) => any): void;
         getValidator(): (key: string, value: any) => boolean;
@@ -70,6 +83,28 @@ declare namespace DataSense {
         readonly registeredDate: Date;
         readonly count: number;
         sync(message?: FireInfoContract | string): void;
+    }
+    interface CacheOptionsContract {
+        formatRev?: number;
+        tag?: any;
+        expiresIn?: number | Date | null | undefined;
+        handler?: (info: {
+            value: any;
+            formatRev: number | undefined;
+            tag: any;
+            expiration: Date | undefined;
+            updated: Date;
+        }) => boolean;
+    }
+    interface SetterOptionsContract extends FireInfoContract {
+        cacheOptions?: CacheOptionsContract;
+    }
+    interface GetterOptionsContract {
+        minFormatRev?: number;
+        maxFormatRev?: number;
+        ignoreExpires?: boolean;
+        earliest?: Date;
+        callback?: (details: PropDetailsContract<any>) => void;
     }
 }
 declare namespace DataSense.Access {
@@ -671,6 +706,9 @@ declare namespace DataSense {
         broadcastReceived: SingleEventObservable<any>;
         propNotifyReceived: EventObservable;
         notifyReceived: SingleEventObservable<any>;
+        emptyPropRequested: SingleEventObservable<{
+            key: string;
+        }>;
         sendPropRequest(key: string, type: string, value: any): void;
         sendRequest(type: string, value: any): void;
         sendPropBroadcast(key: string, data: any, message?: FireInfoContract | string): void;
@@ -747,8 +785,17 @@ declare namespace DataSense {
          * Gets a value of the specific key.
          * @param key  The property key.
          */
-        getProp(key: string): any;
+        getProp(key: string, options?: GetterOptionsContract): any;
+        /**
+         * Gets the update time of the specific key.
+         * @param key  The property key.
+         */
         getPropUpdateTime(key: string): Date | undefined;
+        /**
+         * Gets the details information of the specific key.
+         * @param key  The property key.
+         */
+        getPropDetails<T>(key: string): PropDetailsContract<T>;
         registerChangeFlow(key: string, ...value: ValueModifierContract<any>[]): ChangeFlowRegisteredContract;
         clearChangeFlow(key: string): number;
         /**
@@ -897,21 +944,21 @@ declare namespace DataSense {
         /**
          * Initializes a new instance of the PropsClient class.
          */
-        constructor(defaultValue: any, modifier: (setter: (key: string, newValue: any, message?: FireInfoContract | string) => ValueResolveContract<any>) => void, propSetter: (key: string, value: any, message?: FireInfoContract | string) => ChangedInfo<any>, sendPropNotify: (key: string, data: any, message?: FireInfoContract | string) => void, sendNotify: (data: any, message?: FireInfoContract | string) => void, registerPropRequestHandler: (key: string, type: string, h: (owner: SimpleValueAccessorContract<any>, value: any) => void) => boolean, registerRequestHandler: (type: string, h: (owner: SimplePropsAccessorContract, value: any) => void) => boolean, additionalEvents: PropsFurtherEventsContract);
+        constructor(defaultValue: any, modifier: (setter: (key: string, newValue: any, message?: SetterOptionsContract | string) => ValueResolveContract<any>) => void, propSetter: (key: string, value: any, message?: FireInfoContract | string) => ChangedInfo<any>, sendPropNotify: (key: string, data: any, message?: FireInfoContract | string) => void, sendNotify: (data: any, message?: FireInfoContract | string) => void, registerPropRequestHandler: (key: string, type: string, h: (owner: SimpleValueAccessorContract<any>, value: any) => void) => boolean, registerRequestHandler: (type: string, h: (owner: SimplePropsAccessorContract, value: any) => void) => boolean, additionalEvents: PropsFurtherEventsContract);
         /**
          * Sets a value of the specific key.
          * @param key  The property key.
          * @param value  The value of the property to set.
          * @param message  A message for the setting event.
          */
-        setProp(key: string, value: any, message?: FireInfoContract | string): boolean;
+        setProp(key: string, value: any, message?: SetterOptionsContract | string): boolean;
         /**
          * Sets a value of the specific key. A status and further information will be returned.
          * @param key  The property key.
          * @param value  The value of the property to set.
          * @param message  A message for the setting event.
          */
-        setPropForDetails<T>(key: string, value: T, message?: FireInfoContract | string): ChangedInfo<T>;
+        setPropForDetails<T>(key: string, value: T, message?: SetterOptionsContract | string): ChangedInfo<T>;
         /**
          * Sets a value of the specific key by a Promise.
          * @param key  The property key.
@@ -919,7 +966,7 @@ declare namespace DataSense {
          * @param compatible  true if the value can also be a non-Promise; otherwise, false.
          * @param message  A message for the setting event.
          */
-        setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T>;
+        setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: SetterOptionsContract | string): Promise<T>;
         /**
          * Sets a value of the specific key by an observable which can be subscribed.
          * @param key  The property key.
@@ -927,7 +974,7 @@ declare namespace DataSense {
          * @param message  A message for the setting event.
          * @param callbackfn  A function will be called on subscribed.
          */
-        setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any): SubscriberResultContract;
+        setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: SetterOptionsContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any): SubscriberResultContract;
         /**
          * Send a notification for a speicific property.
          * @param key  The property key.
@@ -1298,7 +1345,7 @@ declare namespace DataSense {
         /**
          * Gets the value.
          */
-        get(): T;
+        get(options?: GetterOptionsContract): T;
         /**
          * Gets the type of value.
          */
@@ -1385,13 +1432,13 @@ declare namespace DataSense {
         /**
          * Initializes a new instance of the ValueClient class.
          */
-        constructor(defaultValue: T, modifier: (setter: ValueModifierContract<T>) => void, setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>, sendNotify: (data: any, message?: FireInfoContract | string) => void, registerRequestHandler: (type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) => boolean, additionalEvents: ValueFurtherEventsContract, forceUpdate?: (message?: FireInfoContract | string) => void);
+        constructor(defaultValue: T, modifier: (setter: ValueModifierContract<T>) => void, setter: (value: T, message?: SetterOptionsContract | string) => ChangedInfo<T>, sendNotify: (data: any, message?: FireInfoContract | string) => void, registerRequestHandler: (type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) => boolean, additionalEvents: ValueFurtherEventsContract, forceUpdate?: (message?: FireInfoContract | string) => void);
         /**
          * Sets value.
          * @param value  The value of the property to set.
          * @param message  A message for the setting event.
          */
-        set(value: T, message?: FireInfoContract | string): boolean;
+        set(value: T, message?: SetterOptionsContract | string): boolean;
         /**
          * Sets the value. A status and further information will be returned.
          * @param value  The value of the property to set.
@@ -1461,27 +1508,27 @@ declare namespace DataSense {
          * @param value  The value of the property to set.
          * @param message  A message for the setting event.
          */
-        set(value: T, message?: FireInfoContract | string): boolean;
+        set(value: T, message?: SetterOptionsContract | string): boolean;
         /**
          * Sets the value. A status and further information will be returned.
          * @param value  The value of the property to set.
          * @param message  A message for the setting event.
          */
-        setForDetails(value: T, message?: FireInfoContract | string): ChangedInfo<T>;
+        setForDetails(value: T, message?: SetterOptionsContract | string): ChangedInfo<T>;
         /**
          * Sets a value by a Promise.
          * @param value  A Promise of the property to set.
          * @param compatible  true if the value can also be a non-Promise; otherwise, false.
          * @param message  A message for the setting event.
          */
-        setPromise(value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T>;
+        setPromise(value: Promise<T>, compatible?: boolean, message?: SetterOptionsContract | string): Promise<T>;
         /**
          * Sets a value by an observable which can be subscribed.
          * @param value  A Promise of the property to set.
          * @param message  A message for the setting event.
          * @param callbackfn  A function will be called on subscribed.
          */
-        setSubscribe(value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any): SubscriberResultContract;
+        setSubscribe(value: SubscriberContract<T>, message?: SetterOptionsContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any): SubscriberResultContract;
         /**
          * Forces to notify the update event.
          * @param message  A message for the setting event.

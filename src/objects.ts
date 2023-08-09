@@ -6,6 +6,7 @@ export interface PropsFurtherEventsContract {
     broadcastReceived: SingleEventObservable<any>;
     propNotifyReceived: EventObservable;
     notifyReceived: SingleEventObservable<any>;
+    emptyPropRequested: SingleEventObservable<{ key: string }>;
     sendPropRequest(key: string, type: string, value: any): void;
     sendRequest(type: string, value: any): void;
     sendPropBroadcast(key: string, data: any, message?: FireInfoContract | string): void;
@@ -18,7 +19,8 @@ export interface PropsFurtherEventsContract {
 export class PropsObservable implements DisposableArrayContract {
     private _instance: {
         has(key: string): boolean,
-        get(key: string): any,
+        get(key: string, options?: GetterOptionsContract): any,
+        getDetails<T>(key: string): PropDetailsContract<T>,
         getUpdateTime(key: string): Date | undefined,
         keys(): string[],
         pushFlows(key: string, ...flows: ValueModifierContract<any>[]): ChangeFlowRegisteredContract,
@@ -158,8 +160,8 @@ export class PropsObservable implements DisposableArrayContract {
             hasProp(key) {
                 return obj.accessor.hasProp(key)
             },
-            getProp(key) {
-                return obj.accessor.getProp(key);
+            getProp(key, options) {
+                return obj.accessor.getProp(key, options);
             },
             getPropKeys() {
                 return obj.accessor.getPropKeys();
@@ -179,8 +181,8 @@ export class PropsObservable implements DisposableArrayContract {
         };
         let getSimplePropAccessor = (key: string) => {
             return {
-                get() {
-                    return obj.accessor.getProp(key);
+                get(options) {
+                    return obj.accessor.getProp(key, options);
                 },
                 set(value, message?) {
                     return obj.accessor.setProp(key, value, message);
@@ -189,8 +191,7 @@ export class PropsObservable implements DisposableArrayContract {
                     obj.accessor.forceUpdateProp(key);
                 }
             } as SimpleValueAccessorContract<any>;
-        }
-
+        };
         let sendPropRequestH = (key: string, type: string, value: any) => {
             obj.sendPropRequest(key, type, value, getSimplePropAccessor(key));
         };
@@ -208,8 +209,11 @@ export class PropsObservable implements DisposableArrayContract {
             has(key) {
                 return obj.accessor.hasProp(key)
             },
-            get(key) {
-                return obj.accessor.getProp(key);
+            get(key, options) {
+                return obj.accessor.getProp(key, options);
+            },
+            getDetails(key) {
+                return obj.accessor.getPropDetails(key);
             },
             getUpdateTime(key) {
                 return obj.accessor.getPropUpdateTime(key);
@@ -312,12 +316,24 @@ export class PropsObservable implements DisposableArrayContract {
      * Gets a value of the specific key.
      * @param key  The property key.
      */
-    public getProp(key: string) {
-        return this._instance.get(key);
+    public getProp(key: string, options?: GetterOptionsContract) {
+        return this._instance.get(key, options);
     }
 
+    /**
+     * Gets the update time of the specific key.
+     * @param key  The property key.
+     */
     public getPropUpdateTime(key: string): Date | undefined {
         return this._instance.getUpdateTime(key);
+    }
+
+    /**
+     * Gets the details information of the specific key.
+     * @param key  The property key.
+     */
+    public getPropDetails<T>(key: string): PropDetailsContract<T> {
+        return this._instance.getDetails<T>(key);
     }
 
     public registerChangeFlow(key: string, ...value: ValueModifierContract<any>[]) {
@@ -627,7 +643,7 @@ export class PropsObservable implements DisposableArrayContract {
  */
 export class PropsClient extends PropsObservable {
 
-    private readonly _propSetter: (key: string, value: any, message?: FireInfoContract | string) => ChangedInfo<any>;
+    private readonly _propSetter: (key: string, value: any, message?: SetterOptionsContract | string) => ChangedInfo<any>;
     private readonly _sendPropNotify: (key: string, data: any, message?: FireInfoContract | string) => void;
     private readonly _sendNotify: (data: any, message?: FireInfoContract | string) => void;
     private readonly _registerPropRequestHandler: (key: string, type: string, h: (owner: SimpleValueAccessorContract<any>, value: any) => void) => boolean;
@@ -643,7 +659,7 @@ export class PropsClient extends PropsObservable {
      */
     constructor(
         defaultValue: any,
-        modifier: (setter: (key: string, newValue: any, message?: FireInfoContract | string) => ValueResolveContract<any>) => void,
+        modifier: (setter: (key: string, newValue: any, message?: SetterOptionsContract | string) => ValueResolveContract<any>) => void,
         propSetter: (key: string, value: any, message?: FireInfoContract | string) => ChangedInfo<any>,
         sendPropNotify: (key: string, data: any, message?: FireInfoContract | string) => void,
         sendNotify: (data: any, message?: FireInfoContract | string) => void,
@@ -690,7 +706,7 @@ export class PropsClient extends PropsObservable {
      * @param value  The value of the property to set.
      * @param message  A message for the setting event.
      */
-    public setProp(key: string, value: any, message?: FireInfoContract | string): boolean {
+    public setProp(key: string, value: any, message?: SetterOptionsContract | string): boolean {
         if (typeof this._propSetter !== "function") return false;
         let info = this._propSetter(key, value, message)
         return info ? info.success : false;
@@ -702,7 +718,7 @@ export class PropsClient extends PropsObservable {
      * @param value  The value of the property to set.
      * @param message  A message for the setting event.
      */
-    public setPropForDetails<T>(key: string, value: T, message?: FireInfoContract | string): ChangedInfo<T> {
+    public setPropForDetails<T>(key: string, value: T, message?: SetterOptionsContract | string): ChangedInfo<T> {
         if (typeof this._propSetter !== "function") return ChangedInfo.fail(null, undefined, value, "not implemented");
         return this._propSetter(key, value, message);
     }
@@ -714,7 +730,7 @@ export class PropsClient extends PropsObservable {
      * @param compatible  true if the value can also be a non-Promise; otherwise, false.
      * @param message  A message for the setting event.
      */
-    public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
+    public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: SetterOptionsContract | string): Promise<T> {
         return Access.setPromise((value, message?) => {
             return this.setPropForDetails(key, value, message);
         }, value, compatible, message);
@@ -727,7 +743,7 @@ export class PropsClient extends PropsObservable {
      * @param message  A message for the setting event.
      * @param callbackfn  A function will be called on subscribed.
      */
-    public setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
+    public setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: SetterOptionsContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
         return Access.setSubscribe((value, message?) => {
             return this.setPropForDetails(key, value, message);
         }, value, message, callbackfn, thisArg);
@@ -1059,6 +1075,7 @@ export class PropsController extends PropsObservable {
             broadcastReceived: this.broadcastReceived.createObservable(),
             propNotifyReceived: this.propNotifyReceived.createObservable(),
             notifyReceived: this.notifyReceived.createObservable(),
+            emptyPropRequested: this.emptyPropRequested.createObservable(),
             sendPropRequest,
             sendRequest,
             sendPropBroadcast,
@@ -1066,6 +1083,7 @@ export class PropsController extends PropsObservable {
         });
         client.pushDisposable(token);
         this.pushDisposable(client);
+        client.emptyPropRequested.on(ev => this.getProp(ev.key));
         return client;
     }
 }

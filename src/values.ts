@@ -14,7 +14,7 @@ export interface ValueFurtherEventsContract {
  */
 export class ValueObservable<T> implements DisposableArrayContract {
     private _instance: {
-        get(): T,
+        get(options?: GetterOptionsContract): T,
         pushFlows(...flows: ValueModifierContract<any>[]): ChangeFlowRegisteredContract,
         clearFlows(): number,
         sendRequest(type: string, value: any): void,
@@ -95,8 +95,8 @@ export class ValueObservable<T> implements DisposableArrayContract {
         disposable.pushDisposable(this.changing, this.changed, this.changeFailed, this.broadcastReceived, this.notifyReceived);
 
         let simpleAccessor: SimpleValueAccessorContract<T> = {
-            get() {
-                return obj.accessor.getProp(accessKey);
+            get(options) {
+                return obj.accessor.getProp(accessKey, options);
             },
             set(value, message?) {
                 return obj.accessor.setProp(accessKey, value, message);
@@ -114,8 +114,8 @@ export class ValueObservable<T> implements DisposableArrayContract {
         };
 
         this._instance = {
-            get() {
-                return obj.accessor.getProp(accessKey);
+            get(options?: GetterOptionsContract) {
+                return obj.accessor.getProp(accessKey, options);
             },
             pushFlows(...flows) {
                 return obj.pushFlows(accessKey, ...flows);
@@ -157,8 +157,8 @@ export class ValueObservable<T> implements DisposableArrayContract {
             if (typeof eventsMore.sendBroadcast === "function") sendBroadcastH = eventsMore.sendBroadcast;
         }
         changer({
-            get() {
-                return obj.accessor.getProp(accessKey)
+            get(options) {
+                return obj.accessor.getProp(accessKey, options)
             },
             set(value, message?) {
                 return obj.accessor.setProp(accessKey, value, message);
@@ -218,8 +218,8 @@ export class ValueObservable<T> implements DisposableArrayContract {
     /**
      * Gets the value.
      */
-    public get() {
-        return this._instance.get();
+    public get(options?: GetterOptionsContract) {
+        return this._instance.get(options);
     }
 
     /**
@@ -375,7 +375,7 @@ export class ValueObservable<T> implements DisposableArrayContract {
  * Data property accessing and observing client.
  */
 export class ValueClient<T> extends ValueObservable<T> {
-    private readonly _setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>;
+    private readonly _setter: (value: T, message?: SetterOptionsContract | string) => ChangedInfo<T>;
     private readonly _forceUpdate: (message?: FireInfoContract | string) => void;
     private readonly _sendNotify: (data: any, message?: FireInfoContract | string) => void;
     private readonly _registerRequestHandler: (type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) => boolean;
@@ -386,7 +386,7 @@ export class ValueClient<T> extends ValueObservable<T> {
     constructor(
         defaultValue: T,
         modifier: (setter: ValueModifierContract<T>) => void,
-        setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>,
+        setter: (value: T, message?: SetterOptionsContract | string) => ChangedInfo<T>,
         sendNotify: (data: any, message?: FireInfoContract | string) => void,
         registerRequestHandler: (type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) => boolean,
         additionalEvents: ValueFurtherEventsContract,
@@ -410,7 +410,7 @@ export class ValueClient<T> extends ValueObservable<T> {
      * @param value  The value of the property to set.
      * @param message  A message for the setting event.
      */
-    public set(value: T, message?: FireInfoContract | string): boolean {
+    public set(value: T, message?: SetterOptionsContract | string): boolean {
         if (typeof this._setter !== "function") return false;
         let info = this._setter(value, message)
         return info ? info.success : false;
@@ -528,7 +528,7 @@ export class ValueController<T> extends ValueObservable<T> {
      * @param value  The value of the property to set.
      * @param message  A message for the setting event.
      */
-    public set(value: T, message?: FireInfoContract | string): boolean {
+    public set(value: T, message?: SetterOptionsContract | string): boolean {
         let info = this._accessor.set(value, message);
         return info ? info.success : false;
     }
@@ -538,7 +538,7 @@ export class ValueController<T> extends ValueObservable<T> {
      * @param value  The value of the property to set.
      * @param message  A message for the setting event.
      */
-    public setForDetails(value: T, message?: FireInfoContract | string): ChangedInfo<T> {
+    public setForDetails(value: T, message?: SetterOptionsContract | string): ChangedInfo<T> {
         return this._accessor.set(value, message);
     }
 
@@ -548,7 +548,7 @@ export class ValueController<T> extends ValueObservable<T> {
      * @param compatible  true if the value can also be a non-Promise; otherwise, false.
      * @param message  A message for the setting event.
      */
-    public setPromise(value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
+    public setPromise(value: Promise<T>, compatible?: boolean, message?: SetterOptionsContract | string): Promise<T> {
         return Access.setPromise((value, message?) => {
             return this.setForDetails(value, message);
         }, value, compatible, message);
@@ -560,7 +560,7 @@ export class ValueController<T> extends ValueObservable<T> {
      * @param message  A message for the setting event.
      * @param callbackfn  A function will be called on subscribed.
      */
-    public setSubscribe(value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
+    public setSubscribe(value: SubscriberContract<T>, message?: SetterOptionsContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
         return Access.setSubscribe((value, message?) => {
             return this.setForDetails(value, message);
         }, value, message, callbackfn, thisArg);

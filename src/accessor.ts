@@ -10,13 +10,13 @@ export interface ValueResolveContract<T> {
 }
 
 export interface SimpleValueAccessorContract<T> {
-    get(): T;
-    set(value: T, message?: FireInfoContract | string): ChangedInfo<T> | undefined;
+    get(options?: GetterOptionsContract): T;
+    set(value: T, message?: SetterOptionsContract | string): ChangedInfo<T> | undefined;
     forceUpdate(message?: FireInfoContract | string): void;
 }
 
 export interface ValueAccessorContract<T> extends SimpleValueAccessorContract<T> {
-    customizedSet(valueRequested: any, message?: FireInfoContract | string): ValueResolveContract<T>;
+    customizedSet(valueRequested: any, message?: SetterOptionsContract | string): ValueResolveContract<T>;
     getFormatter(): (value: any) => T;
     setFormatter(h: (value: any) => T): void;
     getValidator(): (value: T) => boolean;
@@ -33,10 +33,21 @@ export interface RegisterRequestContract<T> {
 
 export type PropUpdateActionContract<T> = ({ action: "delete", key: string | string[] } | { action: "init", value?: T, key: string, create?: () => T } | { action: "set", key: string, value?: T } | { action: "batch", value?: any });
 
+export interface PropDetailsContract<T> {
+    hasValue: boolean;
+    key: string;
+    value: T;
+    store: { [property: string]: any };
+    cacheOptions: CacheOptionsContract | undefined;
+    updateTime: Date | undefined;
+    requestHandlerTypes: string[];
+    flowCount: number;
+}
+
 export interface SimplePropsAccessorContract {
     hasProp(key: string): boolean;
-    getProp(key: string): any;
-    setProp(key: string, value: any, message?: FireInfoContract | string): ChangedInfo<any>;
+    getProp(key: string, options?: GetterOptionsContract): any;
+    setProp(key: string, value: any, message?: SetterOptionsContract | string): ChangedInfo<any>;
     removeProp(keys: string | string[], message?: FireInfoContract | string): number;
     batchProp(changeSet: any | PropUpdateActionContract<any>[], message?: FireInfoContract | string): void;
     forceUpdateProp(key: string, message?: FireInfoContract | string): void;
@@ -44,7 +55,8 @@ export interface SimplePropsAccessorContract {
 }
 
 export interface PropsAccessorContract extends SimplePropsAccessorContract {
-    customizedSetProp(key: string, valueRequested: any, message?: FireInfoContract | string): ValueResolveContract<any>;
+    getPropDetails<T>(key: string): PropDetailsContract<T>;
+    customizedSetProp(key: string, valueRequested: any, message?: SetterOptionsContract | string): ValueResolveContract<any>;
     getFormatter(): (key: string, value: any) => any;
     setFormatter(h: (key: string, value: any) => any): void;
     getValidator(): (key: string, value: any) => boolean;
@@ -67,9 +79,60 @@ export interface ChangeFlowRegisteredContract extends DisposableContract {
     sync(message?: FireInfoContract | string): void;
 }
 
+export interface CacheOptionsContract {
+    formatRev?: number;
+    tag?: any;
+    expiresIn?: number | Date | null | undefined;
+    handler?: (info: { value: any, formatRev: number | undefined, tag: any, expiration: Date | undefined, updated: Date }) => boolean;
+}
+
+export interface SetterOptionsContract extends FireInfoContract {
+    cacheOptions?: CacheOptionsContract;
+}
+
+export interface GetterOptionsContract {
+    minFormatRev?: number;
+    maxFormatRev?: number;
+    ignoreExpires?: boolean;
+    earliest?: Date;
+    callback?: (details: PropDetailsContract<any>) => void;
+}
+
 }
 
 namespace DataSense.Access {
+
+interface PropInfoContract {
+    value: any;
+    handlers: any[];
+    store: any;
+    flows: ValueModifierContract<any>[];
+    updating?: { value: any, custom?: boolean, cancel(err: any): void };
+    factory: any;
+    caching?: CacheOptionsContract;
+    updated: Date;
+}
+
+function isExpired(cacheOptions: CacheOptionsContract, updateTime: Date) {
+    if (!cacheOptions || !cacheOptions.expiresIn) return false;
+    let now = new Date();
+    if (cacheOptions.expiresIn instanceof Date) return now > cacheOptions.expiresIn;
+    if (!updateTime) return true;
+    return now.getTime() > (updateTime.getTime() + cacheOptions.expiresIn);
+}
+
+function convertToDetails(key: string, prop: PropInfoContract) {
+    return {
+        hasValue: (prop as Object).hasOwnProperty("value"),
+        key: key,
+        value: prop.value,
+        store: { ...prop.store },
+        cacheOptions: prop.caching,
+        updateTime: prop.updated,
+        requestHandlerTypes: Object.keys(prop.factory),
+        flowCount: prop.flows.length,
+    };
+}
 
 export function setPromise<T>(setter: (value: T, message?: FireInfoContract | string) => ChangedInfo<T>, value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
     if (value === undefined) return Promise.reject("value is undefined");
@@ -121,15 +184,7 @@ export function propsAccessor(): {
     let hasProp = (key: string) => {
         return (store as Object).hasOwnProperty(key) && (store[key] as Object).hasOwnProperty("value");
     };
-    let getProp = (key: string, ensure: boolean): {
-        value: any,
-        handlers: any[],
-        store: any,
-        flows: ValueModifierContract<any>[],
-        updating?: { value: any, custom?: boolean, cancel(err: any): void },
-        factory: any,
-        updated: Date,
-    } => {
+    let getProp = (key: string, ensure: boolean, ignoreExpiration?: boolean): PropInfoContract => {
         if (!key || typeof key !== "string") return undefined;
         let obj = store[key];
         if (!obj) {
@@ -140,16 +195,44 @@ export function propsAccessor(): {
                 factory: {}
             };
             if (ensure) store[key] = obj;
+        } else if (!ignoreExpiration) {
+            let cacheOptions = obj.caching as CacheOptionsContract;
+            if (cacheOptions) {
+                if (isExpired(cacheOptions, obj.updated)) {
+                    delete obj.value;
+                } else if (typeof cacheOptions.handler === "function") {
+                    let expiration: Date;
+                    if (cacheOptions.expiresIn instanceof Date) expiration = cacheOptions.expiresIn;
+                    else if (typeof cacheOptions.expiresIn === "number") expiration = new Date(new Date().getTime() + cacheOptions.expiresIn);
+                    else expiration = undefined;
+                    if (cacheOptions.handler({
+                        value: obj.value,
+                        formatRev: cacheOptions.formatRev,
+                        tag: cacheOptions.tag,
+                        expiration,
+                        updated: obj.updated,
+                    })) {
+                        delete obj.value;
+                    }
+                }
+            }
         }
 
-        eventManager.fire("prop-empty", { key });
         return obj;
     };
     let formatter: ((key: string, value: any) => any);
     let validator: ((key: string, value: any) => boolean);
     let actionRequests: any = {};
+    let undefinedProps: string[] = [];
 
-    let setProp = (key: string, value: any, message: FireInfoContract | string, init?: boolean, getResp?: boolean): ChangedInfo<any> => {
+    let notifyUndefinedProp = (prop: PropInfoContract, key: string) => {
+        if ((prop as Object).hasOwnProperty("value") || undefinedProps.indexOf(key) >= 0) return;
+        undefinedProps.push(key);
+        if (undefinedProps.length > 50) undefinedProps = undefinedProps.slice(1);
+        eventManager.fire("prop-empty", { key });
+    }
+    
+    let setProp = (key: string, value: any, message: SetterOptionsContract | string, init?: boolean, getResp?: boolean): ChangedInfo<any> => {
         let prop = getProp(key, true);
         if (!prop) return getResp ? new ChangedInfo(null, "invalid", false, undefined, undefined, value, "key is not valid") : undefined;
         if (init && (prop as Object).hasOwnProperty("value")) return getResp ? ChangedInfo.fail(key, prop.value, value, "ignore") : undefined;
@@ -199,6 +282,7 @@ export function propsAccessor(): {
 
         prop.updating = null;
         prop.updated = new Date();
+        if (message && typeof message !== "string" && message.cacheOptions) prop.caching = message.cacheOptions;
         prop.value = value;
         onceC.resolve(value);
         if (oldValue === value) return ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
@@ -242,6 +326,7 @@ export function propsAccessor(): {
 
             prop.updating = null;
             prop.updated = new Date();
+            delete prop.caching;
             delete prop.value;
             let info = ChangedInfo.success(key, undefined, oldValue);
             result.push(info);
@@ -261,9 +346,30 @@ export function propsAccessor(): {
         hasProp(key) {
             return hasProp(key);
         },
-        getProp(key) {
-            let prop = getProp(key, false);
+        getProp(key, options) {
+            let prop = getProp(key, false, options?.ignoreExpires);
+            notifyUndefinedProp(prop, key);
+            if (options && typeof options.callback === "function") {
+                options.callback(convertToDetails(key, prop));
+            }
+
+            if (options && prop.caching)
+            {
+                let rev = prop.caching.formatRev
+                if (typeof rev === "number") {
+                    if (typeof options.minFormatRev == "number" && rev < options.minFormatRev) return undefined;
+                    if (typeof options.maxFormatRev == "number" && rev > options.maxFormatRev) return undefined;
+                }
+
+                if (prop.updated && options.earliest instanceof Date && options.earliest > prop.updated) return undefined;
+            }
+
             return prop ? prop.value : undefined;
+        },
+        getPropDetails(key) {
+            let prop = getProp(key, false);
+            notifyUndefinedProp(prop, key);
+            return convertToDetails(key, prop);
         },
         setProp(key, value, message?) {
             let info = setProp(key, value, message, false, true);
@@ -315,6 +421,8 @@ export function propsAccessor(): {
                     onceC.resolve(finalValue);
                     if (oldValue === finalValue) return ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
                     prop.updated = new Date();
+                    delete prop.caching;
+                    if (message && typeof message !== "string" && message.cacheOptions) prop.caching = message.cacheOptions;
                     prop.value = finalValue;
                     let info = ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
                     eventManager.fire("ed-" + key, info);
@@ -347,6 +455,7 @@ export function propsAccessor(): {
                     onceC.resolve(undefined);
                     if (oldValue === undefined) return ChangedInfo.success(key, undefined, oldValue, "remove", valueRequested);
                     prop.updated = new Date();
+                    delete prop.caching;
                     delete prop.value;
                     let info = ChangedInfo.success(key, undefined, oldValue, "remove", valueRequested);
                     eventManager.fire("ed-" + key, info);
