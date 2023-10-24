@@ -893,7 +893,7 @@ export class PropsController extends PropsObservable {
      * @param value  The value of the property to set.
      * @param message  A message for the setting event.
      */
-    public setProp(key: string, value: any, message?: FireInfoContract | string) {
+    public setProp(key: string, value: any, message?: SetterOptionsContract | string) {
         let info = this._accessor.setProp(key, value, message);
         return info ? info.success : false;
     }
@@ -904,7 +904,7 @@ export class PropsController extends PropsObservable {
      * @param value  The value of the property to set.
      * @param message  A message for the setting event.
      */
-    public setPropForDetails<T>(key: string, value: T, message?: FireInfoContract | string): ChangedInfo<T> {
+    public setPropForDetails<T>(key: string, value: T, message?: SetterOptionsContract | string): ChangedInfo<T> {
         return this._accessor.setProp(key, value, message);
     }
 
@@ -915,7 +915,7 @@ export class PropsController extends PropsObservable {
      * @param compatible  true if the value can also be a non-Promise; otherwise, false.
      * @param message  A message for the setting event.
      */
-    public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T> {
+    public setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: SetterOptionsContract | string): Promise<T> {
         return Access.setPromise((value, message?) => {
             return this.setPropForDetails(key, value, message);
         }, value, compatible, message);
@@ -928,7 +928,7 @@ export class PropsController extends PropsObservable {
      * @param message  A message for the setting event.
      * @param callbackfn  A function will be called on subscribed.
      */
-    public setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
+    public setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: SetterOptionsContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any) {
         return Access.setSubscribe((value, message?) => {
             return this.setPropForDetails(key, value, message);
         }, value, message, callbackfn, thisArg);
