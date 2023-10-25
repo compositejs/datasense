@@ -282,7 +282,15 @@ export function propsAccessor(): {
 
         prop.updating = null;
         prop.updated = new Date();
-        if (message && typeof message !== "string" && message.cacheOptions) prop.caching = message.cacheOptions;
+        if (message && typeof message !== "string") {
+            if (typeof message.cacheOptions === "boolean" || message.cacheOptions === null) {
+                if (!message.cacheOptions) prop.caching = null;
+            }
+
+            if (typeof message.cacheOptions !== "number" && typeof message.cacheOptions !== "string")
+                prop.caching = message.cacheOptions;
+        }
+
         prop.value = value;
         onceC.resolve(value);
         if (oldValue === value) return ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
