@@ -1031,6 +1031,10 @@ declare namespace DataSense {
          * Initializes a new instance of the PropsController class.
          */
         constructor();
+        getPropWithFallback<T>(key: string, resolver: (details: PropDetailsContract<T>) => Promise<T>, options?: {
+            testBeforeSet?: boolean;
+            callback?: (details: PropDetailsContract<T>) => void;
+        }): Promise<T>;
         /**
          * Force to update a property.
          * @param key  The property key.
@@ -1043,14 +1047,14 @@ declare namespace DataSense {
          * @param value  The value of the property to set.
          * @param message  A message for the setting event.
          */
-        setProp(key: string, value: any, message?: FireInfoContract | string): boolean;
+        setProp(key: string, value: any, message?: SetterOptionsContract | string): boolean;
         /**
          * Sets a value of the specific key. A status and further information will be returned.
          * @param key  The property key.
          * @param value  The value of the property to set.
          * @param message  A message for the setting event.
          */
-        setPropForDetails<T>(key: string, value: T, message?: FireInfoContract | string): ChangedInfo<T>;
+        setPropForDetails<T>(key: string, value: T, message?: SetterOptionsContract | string): ChangedInfo<T>;
         /**
          * Sets a value of the specific key by a Promise.
          * @param key  The property key.
@@ -1058,7 +1062,7 @@ declare namespace DataSense {
          * @param compatible  true if the value can also be a non-Promise; otherwise, false.
          * @param message  A message for the setting event.
          */
-        setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: FireInfoContract | string): Promise<T>;
+        setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: SetterOptionsContract | string): Promise<T>;
         /**
          * Sets a value of the specific key by an observable which can be subscribed.
          * @param key  The property key.
@@ -1066,7 +1070,7 @@ declare namespace DataSense {
          * @param message  A message for the setting event.
          * @param callbackfn  A function will be called on subscribed.
          */
-        setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: FireInfoContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any): SubscriberResultContract;
+        setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: SetterOptionsContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any): SubscriberResultContract;
         /**
          * Removes a property.
          * @param key  The property key.

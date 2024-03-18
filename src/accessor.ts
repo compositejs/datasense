@@ -250,8 +250,8 @@ export function propsAccessor(): {
         };
         let propExist = hasProp(key);
         let oldValue = prop.value;
-        eventManager.fire("ing-" + key, new ChangingInfo(key, oldValue, value, onceC.createObservable()));
-        eventManager.fire("prop-changing", new ChangingInfo(key, oldValue, value, onceC.createObservable()));
+        eventManager.fire("ing-" + key, new ChangingInfo(key, oldValue, value, onceC.createObservable()), message);
+        eventManager.fire("prop-changing", new ChangingInfo(key, oldValue, value, onceC.createObservable()), message);
         let flowTokens = prop.flows.map(item => {
             if (typeof item !== "function") return undefined;
             return item(value, message);
@@ -266,8 +266,8 @@ export function propsAccessor(): {
 
             let errorInfo = ChangedInfo.fail(key, oldValue, value, "invalid");
             onceC.reject("invalid");
-            eventManager.fire("err-" + key, errorInfo);
-            eventManager.fire("prop-failed", errorInfo);
+            eventManager.fire("err-" + key, errorInfo, message);
+            eventManager.fire("prop-failed", errorInfo, message);
             flowTokens.forEach(item => {
                 if (!item || typeof item.reject !== "function") return;
                 item.reject("invalid");
@@ -295,8 +295,8 @@ export function propsAccessor(): {
         onceC.resolve(value);
         if (oldValue === value) return ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
         let info = ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
-        eventManager.fire("ed-" + key, info);
-        eventManager.fire("prop-changed", info);
+        eventManager.fire("ed-" + key, info, message);
+        eventManager.fire("prop-changed", info, message);
         flowTokens.forEach(item => {
             if (!item || typeof item.resolve !== "function") return;
             item.resolve(value);
@@ -321,8 +321,8 @@ export function propsAccessor(): {
                     onceC.reject(err);
                 }
             };
-            eventManager.fire("ing-" + key, new ChangingInfo(key, oldValue, undefined, onceC.createObservable()));
-            eventManager.fire("prop-changing", new ChangingInfo(key, oldValue, undefined, onceC.createObservable()));
+            eventManager.fire("ing-" + key, new ChangingInfo(key, oldValue, undefined, onceC.createObservable()), message);
+            eventManager.fire("prop-changing", new ChangingInfo(key, oldValue, undefined, onceC.createObservable()), message);
             let flowTokens = prop.flows.map(item => {
                 if (typeof item !== "function") return undefined;
                 return item(undefined, message);
@@ -340,8 +340,8 @@ export function propsAccessor(): {
             result.push(info);
             onceC.resolve(undefined);
             if (oldValue === undefined) return;
-            eventManager.fire("ed-" + key, info);
-            eventManager.fire("prop-changed", info);
+            eventManager.fire("ed-" + key, info, message);
+            eventManager.fire("prop-changed", info, message);
             flowTokens.forEach(item => {
                 if (!item || typeof item.resolve !== "function") return;
                 if (typeof item.remove === "function") item.remove();
@@ -414,8 +414,8 @@ export function propsAccessor(): {
                     onceC.reject(err);
                 }
             };
-            eventManager.fire("ing-" + key, new ChangingInfo(key, oldValue, valueRequested, onceC.createObservable()));
-            eventManager.fire("prop-changing", new ChangingInfo(key, oldValue, valueRequested, onceC.createObservable()));
+            eventManager.fire("ing-" + key, new ChangingInfo(key, oldValue, valueRequested, onceC.createObservable()), message);
+            eventManager.fire("prop-changing", new ChangingInfo(key, oldValue, valueRequested, onceC.createObservable()), message);
             flowTokens = prop.flows.map(item => {
                 if (typeof item !== "function") return undefined;
                 return item(valueRequested, message);
@@ -433,8 +433,8 @@ export function propsAccessor(): {
                     if (message && typeof message !== "string" && message.cacheOptions) prop.caching = message.cacheOptions;
                     prop.value = finalValue;
                     let info = ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
-                    eventManager.fire("ed-" + key, info);
-                    eventManager.fire("prop-changed", info);
+                    eventManager.fire("ed-" + key, info, message);
+                    eventManager.fire("prop-changed", info, message);
                     flowTokens.forEach(item => {
                         if (!item || typeof item.resolve !== "function") return;
                         item.resolve(finalValue);
@@ -448,8 +448,8 @@ export function propsAccessor(): {
                     obj.isAborted = true;
                     let errorInfo = ChangedInfo.fail(key, oldValue, valueRequested, "invalid");
                     onceC.reject("invalid");
-                    eventManager.fire("err-" + key, errorInfo);
-                    eventManager.fire("prop-failed", errorInfo);
+                    eventManager.fire("err-" + key, errorInfo, message);
+                    eventManager.fire("prop-failed", errorInfo, message);
                     flowTokens.forEach(item => {
                         if (!item || typeof item.reject !== "function") return;
                         item.reject("invalid");
@@ -466,8 +466,8 @@ export function propsAccessor(): {
                     delete prop.caching;
                     delete prop.value;
                     let info = ChangedInfo.success(key, undefined, oldValue, "remove", valueRequested);
-                    eventManager.fire("ed-" + key, info);
-                    eventManager.fire("prop-changed", info);
+                    eventManager.fire("ed-" + key, info, message);
+                    eventManager.fire("prop-changed", info, message);
                     flowTokens.forEach(item => {
                         if (!item || typeof item.resolve !== "function") return;
                         item.resolve(undefined);
