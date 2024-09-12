@@ -595,6 +595,7 @@ export class EventObservable implements DisposableArrayContract {
         };
         let implInstance = this._instance;
         implInstance.push(key, obj);
+        let disposableResult: DisposableContract = {} as any;
         let result: EventRegisterResultContract<T> = {
             get key() {
                 return key;
@@ -617,10 +618,16 @@ export class EventObservable implements DisposableArrayContract {
             dispose() {
                 implInstance.remove(key, obj);
                 disposableList.dispose();
+                disposableResult.dispose = () => { };
             }
         };
-        implInstance.pushDisposable(result);
-        if (disposableArray) disposableArray.pushDisposable(result);
+        disposableResult.dispose = () =>
+        {
+            result.dispose();
+            disposableResult.dispose = () => { };
+        };
+        implInstance.pushDisposable(disposableResult);
+        if (disposableArray) disposableArray.pushDisposable(disposableResult);
         return result;
     }
 
