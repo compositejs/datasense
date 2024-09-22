@@ -391,14 +391,44 @@ declare namespace DataSense {
         removeStoreData(...propKey: string[]): number;
     }
     interface EventRegisterResultContract<T> extends DisposableArrayContract {
+        /**
+         * Gets the event key.
+         */
         readonly key: string;
+        /**
+         * Gets the hitting count of event raising.
+         */
         readonly count: number;
+        /**
+         * Gets the date time of the event registered.
+         */
         readonly registerDate: Date;
+        /**
+         * Gets the state of the event register result.
+         */
+        readonly state: "success" | "failure" | "disposed";
+        /**
+         * Forces to fire an event.
+         * @param ev  The event argument.
+         * @param message  The additional event information or message.
+         */
         fire(ev: T, message?: FireInfoContract | string): void;
     }
     interface AnyEventRegisterResultContract extends DisposableContract {
+        /**
+         * Gets the hitting count of event raising.
+         */
         readonly count: number;
+        /**
+         * Gets the date time of the event registered.
+         */
         readonly registerDate: Date;
+        /**
+         * Forces to fire an event.
+         * @param key  The event key.
+         * @param ev  The event argument.
+         * @param message  The additional event information or message.
+         */
         fire(key: string, ev: any, message?: FireInfoContract | string): void;
     }
     /**
