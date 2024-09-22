@@ -209,15 +209,51 @@ export interface EventListenerControllerContract extends DisposableContract {
 }
 
 export interface EventRegisterResultContract<T> extends DisposableArrayContract {
-    readonly key: string,
-    readonly count: number,
-    readonly registerDate: Date,
+    /**
+     * Gets the event key.
+     */
+    readonly key: string;
+
+    /**
+     * Gets the hitting count of event raising.
+     */
+    readonly count: number;
+
+    /**
+     * Gets the date time of the event registered.
+     */
+    readonly registerDate: Date;
+
+    /**
+     * Gets the state of the event register result.
+     */
+    readonly state: "success" | "failure" | "disposed";
+
+    /**
+     * Forces to fire an event.
+     * @param ev  The event argument.
+     * @param message  The additional event information or message.
+     */
     fire(ev: T, message?: FireInfoContract | string): void
 }
 
 export interface AnyEventRegisterResultContract extends DisposableContract {
+    /**
+     * Gets the hitting count of event raising.
+     */
     readonly count: number,
+
+    /**
+     * Gets the date time of the event registered.
+     */
     readonly registerDate: Date,
+
+    /**
+     * Forces to fire an event.
+     * @param key  The event key.
+     * @param ev  The event argument.
+     * @param message  The additional event information or message.
+     */
     fire(key: string, ev: any, message?: FireInfoContract | string): void
 }
 
@@ -491,6 +527,9 @@ export class EventObservable implements DisposableArrayContract {
                 count: 0
             };
             implInstance.push(null, obj);
+            let disposableResult: DisposableContract & {
+                isDisposed?: boolean;
+            } = {} as any;
             let result: AnyEventRegisterResultContract = {
                 get count() {
                     return obj.count;
@@ -503,9 +542,14 @@ export class EventObservable implements DisposableArrayContract {
                 },
                 dispose() {
                     implInstance.remove(null, obj);
+                    disposableResult.dispose = () => { };
+                    disposableResult.isDisposed = true;
                 }
             };
-            implInstance.pushDisposable(result);
+            disposableResult.dispose = () => {
+                result.dispose();
+            };
+            implInstance.pushDisposable(disposableResult);
             return result;
         });
     }
@@ -556,6 +600,9 @@ export class EventObservable implements DisposableArrayContract {
                 get registerDate() {
                     return now;
                 },
+                get state(): "failure" {
+                    return "failure";
+                },
                 fire(ev: T, message?: FireInfoContract | string) {},
                 pushDisposable(...items) {
                     return disposableList.push(...items);
@@ -595,7 +642,10 @@ export class EventObservable implements DisposableArrayContract {
         };
         let implInstance = this._instance;
         implInstance.push(key, obj);
-        let disposableResult: DisposableContract = {} as any;
+        let disposableResult: DisposableContract & {
+            isDisposed?: boolean;
+        } = {} as any;
+        let state: "success" | "disposed" = "success";
         let result: EventRegisterResultContract<T> = {
             get key() {
                 return key;
@@ -605,6 +655,9 @@ export class EventObservable implements DisposableArrayContract {
             },
             get registerDate() {
                 return obj.time;
+            },
+            get state() {
+                return state;
             },
             fire(ev: T, message?: FireInfoContract | string) {
                 implInstance.fire(key, ev, message);
@@ -618,13 +671,14 @@ export class EventObservable implements DisposableArrayContract {
             dispose() {
                 implInstance.remove(key, obj);
                 disposableList.dispose();
+                state = "disposed";
                 disposableResult.dispose = () => { };
+                disposableResult.isDisposed = true;
             }
         };
         disposableResult.dispose = () =>
         {
             result.dispose();
-            disposableResult.dispose = () => { };
         };
         implInstance.pushDisposable(disposableResult);
         if (disposableArray) disposableArray.pushDisposable(disposableResult);
@@ -718,6 +772,9 @@ export class EventObservable implements DisposableArrayContract {
             },
             get registerDate(): Date {
                 return undefined;
+            },
+            get state(): "failure" {
+                return "failure";
             },
             fire(ev: any, message?: FireInfoContract | string) {},
             pushDisposable(...items) {
