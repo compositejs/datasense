@@ -5,14 +5,12 @@ Event controller is used to let you have full control to add listeners and raise
 ## Usage and initialize an instance
 
 ```typescript
-import { EventController } from 'datasense';
+import { createEvent } from 'datasense';
 ```
-
-You can create an instance by using `new` keyword.
 
 ``` typescript
 // Create an instance of event controller so that you can on and fire events.
-var events = new EventController();
+var events = createEvent();
 ```
 
 ## Add event listener

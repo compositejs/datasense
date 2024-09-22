@@ -1107,4 +1107,15 @@ export class PropsController extends PropsObservable {
     }
 }
 
+/**
+ * Creates a props controller with accessor and observable.
+ * @param initObj  The optional initialized properties.
+ * @returns  The props controller with accessor and observable.
+ */
+export function createProps(initObj?: { [property: string]: any }) {
+    let p = new PropsController();
+    if (initObj) p.setProps(initObj);
+    return p;
+}
+
 }

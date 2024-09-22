@@ -728,6 +728,11 @@ declare namespace DataSense {
         static fail<T>(key: string, value: T, valueRequest: T, error?: any): ChangedInfo<T>;
         static push(list: ChangedInfo<any>[], ...items: ChangedInfo<any>[]): void;
     }
+    /**
+     * Creates an event observable and controller.
+     * @returns  The event observable and controller.
+     */
+    function createEvent(): EventController;
 }
 declare namespace DataSense {
     type PropsObservableAccessorContract = PropsAccessorContract & RegisterPropRequestContract<SimplePropsAccessorContract, SimpleValueAccessorContract<any>>;
@@ -1168,6 +1173,14 @@ declare namespace DataSense {
          */
         createClient(): PropsClient;
     }
+    /**
+     * Creates a props controller with accessor and observable.
+     * @param initObj  The optional initialized properties.
+     * @returns  The props controller with accessor and observable.
+     */
+    function createProps(initObj?: {
+        [property: string]: any;
+    }): PropsController;
 }
 declare namespace DataSense {
     type HitTaskHandlerContract = (arg: any, ev: {

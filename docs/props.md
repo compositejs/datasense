@@ -5,14 +5,12 @@ You can manage a set of value controller/observable instance by props controller
 ## Usage and initialize an instance
 
 ```typescript
-import { PropsController } from 'datasense';
+import { createProps } from 'datasense';
 ```
 
-You can create an instance by using `new` keyword.
-
 ``` typescript
-// Create an instance.
-let props = new PropsController();
+// Create an instance to access props and listen changed events.
+let props = new createProps();
 ```
 
 ## Access

@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assert = exports.run = exports.create = void 0;
+exports.assert = void 0;
+exports.create = create;
+exports.run = run;
 let assertCount = 0;
 function create(name) {
     let list = [];
@@ -53,7 +55,6 @@ function create(name) {
     };
     return client;
 }
-exports.create = create;
 function run(...tests) {
     console.info("START");
     let count = {
@@ -75,7 +76,6 @@ function run(...tests) {
     if (count.failure > 0)
         throw new Error("Oops, " + count.failure + " test cases failed.");
 }
-exports.run = run;
 function throwError(summary, details, message) {
     var err = "Expect " + summary + " #" + assertCount + " " + details;
     if (message)

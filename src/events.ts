@@ -1299,4 +1299,12 @@ export class ChangedInfo<T> {
     }
 }
 
+/**
+ * Creates an event observable and controller.
+ * @returns  The event observable and controller.
+ */
+export function createEvent() {
+    return new EventController();
+}
+
 }
