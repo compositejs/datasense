@@ -670,10 +670,12 @@ export class EventObservable implements DisposableArrayContract {
             },
             dispose() {
                 implInstance.remove(key, obj);
+                implInstance.removeDisposable(disposableResult);
                 disposableList.dispose();
                 state = "disposed";
                 disposableResult.dispose = () => { };
                 disposableResult.isDisposed = true;
+                if (disposableArray) disposableArray.removeDisposable(disposableResult);
             }
         };
         disposableResult.dispose = () =>
@@ -952,7 +954,7 @@ export class EventController extends EventObservable {
      * @param delay  A span in millisecond to delay to raise.
      */
     public fire(key: string, ev: any, message?: FireInfoContract | string, delay?: number | boolean): void {
-        HitTask.delay(() => {
+        DataSense.delay(() => {
             this._fireHandler(key, ev, message);
         }, delay);
     }
@@ -1029,7 +1031,7 @@ export class OnceObservable<T> {
             delete this._result.rejected;
             if (!list) return;
             list.forEach(item => {
-                HitTask.delay(() => {
+                DataSense.delay(() => {
                     item.h.call(item.thisArg, value);
                 }, item.delay);
             });
@@ -1086,7 +1088,7 @@ export class OnceObservable<T> {
      * @param delay  A span in millisecond to delay to process.
      */
     public onResolvedLater(h: (value: T) => void, thisArg?: any, delay?: boolean | number) {
-        HitTask.delay(() => {
+        DataSense.delay(() => {
             this.onResolved(h, thisArg, delay);
         }, true);
     }
@@ -1115,7 +1117,7 @@ export class OnceObservable<T> {
      * @param delay  A span in millisecond to delay to process.
      */
     public onRejectedLater(h: (value: T) => void, thisArg?: any, delay?: boolean | number) {
-        HitTask.delay(() => {
+        DataSense.delay(() => {
             this.onRejected(h, thisArg, delay);
         }, true);
     }
@@ -1262,6 +1264,16 @@ export class ChangedInfo<T> {
         return this.oldValue === this.value;
     }
 
+    /**
+     * Creates an information instance described a value is changed.
+     * @param key  The property key.
+     * @param value  The new value of the property.
+     * @param oldValue  The old value of the property.
+     * @param action  The action kind of change.
+     * @param valueRequest  The property value request to update.
+     * @param error  The error information.
+     * @returns  A changed info object.
+     */
     public static success<T>(key: string, value: T, oldValue: T, action?: ChangeActionContract | boolean, valueRequest?: T, error?: any) {
         if (!action) {
             if (key) {
@@ -1279,10 +1291,23 @@ export class ChangedInfo<T> {
         return new ChangedInfo<T>(key, action, true, value, oldValue, arguments.length > 4 ? valueRequest : value, error);
     }
 
+    /**
+     * Creates an information instance described a value is failed to change.
+     * @param key  The property key.
+     * @param value  The value of the property.
+     * @param valueRequest  The property value request to update.
+     * @param error  The error information.
+     * @returns  A changed info object.
+     */
     public static fail<T>(key: string, value: T, valueRequest: T, error?: any) {
         return new ChangedInfo<T>(key, "none", false, value, value, valueRequest, error);
     }
 
+    /**
+     * Append a set of changed info objects into an array.
+     * @param list  The array to push further items.
+     * @param items  The items to push.
+     */
     public static push(list: ChangedInfo<any>[], ...items: ChangedInfo<any>[]): void {
         if (!list) return;
         let index = -1;

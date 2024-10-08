@@ -724,8 +724,31 @@ declare namespace DataSense {
          * Gets a value indicating whether the value has been changed.
          */
         get hasChanged(): boolean;
+        /**
+         * Creates an information instance described a value is changed.
+         * @param key  The property key.
+         * @param value  The new value of the property.
+         * @param oldValue  The old value of the property.
+         * @param action  The action kind of change.
+         * @param valueRequest  The property value request to update.
+         * @param error  The error information.
+         * @returns  A changed info object.
+         */
         static success<T>(key: string, value: T, oldValue: T, action?: ChangeActionContract | boolean, valueRequest?: T, error?: any): ChangedInfo<T>;
+        /**
+         * Creates an information instance described a value is failed to change.
+         * @param key  The property key.
+         * @param value  The value of the property.
+         * @param valueRequest  The property value request to update.
+         * @param error  The error information.
+         * @returns  A changed info object.
+         */
         static fail<T>(key: string, value: T, valueRequest: T, error?: any): ChangedInfo<T>;
+        /**
+         * Append a set of changed info objects into an array.
+         * @param list  The array to push further items.
+         * @param items  The items to push.
+         */
         static push(list: ChangedInfo<any>[], ...items: ChangedInfo<any>[]): void;
     }
     /**
@@ -1297,49 +1320,49 @@ declare namespace DataSense {
          * Tries to abort the pending processing.
          */
         abort(): void;
-        /**
-         * Delays to process a speicific handler.
-         * @param h  The handler.
-         * @param span  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
-         */
-        static delay(h: Function, span: number | boolean): DisposableContract;
-        /**
-         * Processes a handler and ignore the up coming ones in a specific time span.
-         * @param h  The handler to process.
-         * @param span  A time span in millisecond to avoid up coming.
-         * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
-         */
-        static throttle(h: HitTaskHandlerContract | HitTaskHandlerContract[], span: number, justPrepare?: boolean): HitTask;
-        /**
-         * Processes a handler delay or immediately in debounce mode.
-         * @param h  The handler to process.
-         * @param delay  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
-         * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
-         */
-        static debounce(h: HitTaskHandlerContract | HitTaskHandlerContract[], delay: number | boolean, justPrepare?: boolean): HitTask;
-        /**
-         * Processes a handler delay or immediately in mono mode.
-         * @param h  The handler to process.
-         * @param delay  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
-         * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
-         */
-        static mono(h: HitTaskHandlerContract | HitTaskHandlerContract[], delay: number | boolean, justPrepare?: boolean): HitTask;
-        /**
-         * Processes a handler in multiple hits task.
-         * @param h  The handler to process.
-         * @param min  The minimum hit count.
-         * @param max  The maximum hit count.
-         * @param span  The hit reset span.
-         * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
-         */
-        static multiHit(h: HitTaskHandlerContract | HitTaskHandlerContract[], minCount: number, maxCount: number, span: number, justPrepare?: boolean): HitTask;
-        /**
-         * Schedule to process a specific handler.
-         * @param h  The handler to process.
-         * @param span  A time span in millisecond of duration.
-         */
-        static schedule(h: (info: ScheduleTaskInfoContract) => void, span: number): ScheduleTaskResultContract;
     }
+    /**
+     * Delays to process a speicific handler.
+     * @param h  The handler.
+     * @param span  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
+     */
+    function delay(h: Function, span: number | boolean): DisposableContract;
+    /**
+     * Processes a handler and ignore the up coming ones in a specific time span.
+     * @param h  The handler to process.
+     * @param span  A time span in millisecond to avoid up coming.
+     * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+     */
+    function throttle(h: HitTaskHandlerContract | HitTaskHandlerContract[], span: number, justPrepare?: boolean): HitTask;
+    /**
+     * Processes a handler delay or immediately in debounce mode.
+     * @param h  The handler to process.
+     * @param delay  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
+     * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+     */
+    function debounce(h: HitTaskHandlerContract | HitTaskHandlerContract[], delay: number | boolean, justPrepare?: boolean): HitTask;
+    /**
+     * Processes a handler delay or immediately in mono mode.
+     * @param h  The handler to process.
+     * @param delay  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
+     * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+     */
+    function mono(h: HitTaskHandlerContract | HitTaskHandlerContract[], delay: number | boolean, justPrepare?: boolean): HitTask;
+    /**
+     * Processes a handler in multiple hits task.
+     * @param h  The handler to process.
+     * @param min  The minimum hit count.
+     * @param max  The maximum hit count.
+     * @param span  The hit reset span.
+     * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+     */
+    function multiHit(h: HitTaskHandlerContract | HitTaskHandlerContract[], minCount: number, maxCount: number, span: number, justPrepare?: boolean): HitTask;
+    /**
+     * Schedule to process a specific handler.
+     * @param h  The handler to process.
+     * @param span  A time span in millisecond of duration.
+     */
+    function schedule(h: (info: ScheduleTaskInfoContract) => void, span: number): ScheduleTaskResultContract;
 }
 declare namespace DataSense {
     type ValueObservableAccessorContract<T> = ValueAccessorContract<T> & RegisterRequestContract<SimpleValueAccessorContract<T>>;
@@ -1620,4 +1643,10 @@ declare namespace DataSense {
          */
         sendNotify(data: any, message?: FireInfoContract | string): void;
     }
+    /**
+     * Creates a value controller with accessor and observable.
+     * @param value  The optional initialized value.
+     * @returns  The value controller with accessor and observable.
+     */
+    function createValue<T>(value?: T): ValueController<T>;
 }

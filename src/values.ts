@@ -673,4 +673,15 @@ export class ValueController<T> extends ValueObservable<T> {
     }
 }
 
+/**
+ * Creates a value controller with accessor and observable.
+ * @param value  The optional initialized value.
+ * @returns  The value controller with accessor and observable.
+ */
+export function createValue<T>(value?: T) {
+    let p = new ValueController<T>();
+    if (arguments.length > 0) p.set(value);
+    return p;
+}
+
 }

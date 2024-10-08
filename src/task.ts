@@ -209,186 +209,186 @@ export class HitTask {
     public abort() {
         this._abort();
     }
+}
 
-    /**
-     * Delays to process a speicific handler.
-     * @param h  The handler.
-     * @param span  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
-     */
-    public static delay(h: Function, span: number | boolean): DisposableContract {
-        let procToken: any;
-        if (span == null || span === false)
+/**
+ * Delays to process a speicific handler.
+ * @param h  The handler.
+ * @param span  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
+ */
+export function delay(h: Function, span: number | boolean): DisposableContract {
+    let procToken: any;
+    if (span == null || span === false)
+        h();
+    else if (span === true)
+        procToken = setTimeout(() => {
+            procToken = null;
             h();
-        else if (span === true)
-            procToken = setTimeout(() => {
-                procToken = null;
-                h();
-            }, 0);
-        else if (typeof span === "number")
-            procToken = setTimeout(() => {
-                procToken = null;
-                h();
-            }, span);
-        return {
-            dispose() {
-                if (procToken) clearTimeout(procToken);
-                procToken = null;
-            }
+        }, 0);
+    else if (typeof span === "number")
+        procToken = setTimeout(() => {
+            procToken = null;
+            h();
+        }, span);
+    return {
+        dispose() {
+            if (procToken) clearTimeout(procToken);
+            procToken = null;
         }
     }
+}
 
-    /**
-     * Processes a handler and ignore the up coming ones in a specific time span.
-     * @param h  The handler to process.
-     * @param span  A time span in millisecond to avoid up coming.
-     * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
-     */
-    public static throttle(h: HitTaskHandlerContract | HitTaskHandlerContract[], span: number, justPrepare?: boolean) {
-        let task = new HitTask();
-        task.setOptions({
+/**
+ * Processes a handler and ignore the up coming ones in a specific time span.
+ * @param h  The handler to process.
+ * @param span  A time span in millisecond to avoid up coming.
+ * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+ */
+export function throttle(h: HitTaskHandlerContract | HitTaskHandlerContract[], span: number, justPrepare?: boolean) {
+    let task = new HitTask();
+    task.setOptions({
+        span,
+        maxCount: 1
+    });
+    task.pushHandler(h);
+    if (!justPrepare) task.process();
+    return task;
+}
+
+/**
+ * Processes a handler delay or immediately in debounce mode.
+ * @param h  The handler to process.
+ * @param delay  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
+ * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+ */
+export function debounce(h: HitTaskHandlerContract | HitTaskHandlerContract[], delay: number | boolean, justPrepare?: boolean) {
+    let task = new HitTask();
+    task.setOptions({
+        delay,
+        mergeMode: "debounce"
+    });
+    task.pushHandler(h);
+    if (!justPrepare) task.process();
+    return task;
+}
+
+/**
+ * Processes a handler delay or immediately in mono mode.
+ * @param h  The handler to process.
+ * @param delay  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
+ * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+ */
+export function mono(h: HitTaskHandlerContract | HitTaskHandlerContract[], delay: number | boolean, justPrepare?: boolean) {
+    let task = new HitTask();
+    task.setOptions({
+        delay,
+        mergeMode: "mono"
+    });
+    task.pushHandler(h);
+    if (!justPrepare) task.process();
+    return task;
+}
+
+/**
+ * Processes a handler in multiple hits task.
+ * @param h  The handler to process.
+ * @param min  The minimum hit count.
+ * @param max  The maximum hit count.
+ * @param span  The hit reset span.
+ * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
+ */
+export function multiHit(h: HitTaskHandlerContract | HitTaskHandlerContract[], minCount: number, maxCount: number, span: number, justPrepare?: boolean) {
+    let task = new HitTask();
+    task.setOptions({
+        minCount,
+        maxCount,
+        span
+    });
+    task.pushHandler(h);
+    if (!justPrepare) task.process();
+    return task;
+}
+
+/**
+ * Schedule to process a specific handler.
+ * @param h  The handler to process.
+ * @param span  A time span in millisecond of duration.
+ */
+export function schedule(h: (info: ScheduleTaskInfoContract) => void, span: number): ScheduleTaskResultContract {
+    let token: any;
+    let token2: DisposableContract;
+    let startDate: Date;
+    let processDate: Date;
+    let stopDate: Date;
+    let latest: Date;
+    let isInit = true;
+    let clearToken = () => {
+        if (token2) token2.dispose();
+        token2 = null;
+        if (!token) return;
+        clearInterval(token);
+        token = null;
+    };
+    let process = (source: ScheduleTaskSourceContract) => {
+        processDate = new Date();
+        h({
+            startDate,
+            latestStopDate: stopDate,
+            processDate,
+            latestProcessDate: latest,
             span,
-            maxCount: 1
+            source
         });
-        task.pushHandler(h);
-        if (!justPrepare) task.process();
-        return task;
-    }
-
-    /**
-     * Processes a handler delay or immediately in debounce mode.
-     * @param h  The handler to process.
-     * @param delay  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
-     * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
-     */
-    public static debounce(h: HitTaskHandlerContract | HitTaskHandlerContract[], delay: number | boolean, justPrepare?: boolean) {
-        let task = new HitTask();
-        task.setOptions({
-            delay,
-            mergeMode: "debounce"
-        });
-        task.pushHandler(h);
-        if (!justPrepare) task.process();
-        return task;
-    }
-
-    /**
-     * Processes a handler delay or immediately in mono mode.
-     * @param h  The handler to process.
-     * @param delay  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
-     * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
-     */
-    public static mono(h: HitTaskHandlerContract | HitTaskHandlerContract[], delay: number | boolean, justPrepare?: boolean) {
-        let task = new HitTask();
-        task.setOptions({
-            delay,
-            mergeMode: "mono"
-        });
-        task.pushHandler(h);
-        if (!justPrepare) task.process();
-        return task;
-    }
-
-    /**
-     * Processes a handler in multiple hits task.
-     * @param h  The handler to process.
-     * @param min  The minimum hit count.
-     * @param max  The maximum hit count.
-     * @param span  The hit reset span.
-     * @param justPrepare  true if just set up a task which will not process immediately; otherwise, false.
-     */
-    public static multiHit(h: HitTaskHandlerContract | HitTaskHandlerContract[], minCount: number, maxCount: number, span: number, justPrepare?: boolean) {
-        let task = new HitTask();
-        task.setOptions({
-            minCount,
-            maxCount,
-            span
-        });
-        task.pushHandler(h);
-        if (!justPrepare) task.process();
-        return task;
-    }
-
-    /**
-     * Schedule to process a specific handler.
-     * @param h  The handler to process.
-     * @param span  A time span in millisecond of duration.
-     */
-    public static schedule(h: (info: ScheduleTaskInfoContract) => void, span: number): ScheduleTaskResultContract {
-        let token: any;
-        let token2: DisposableContract;
-        let startDate: Date;
-        let processDate: Date;
-        let stopDate: Date;
-        let latest: Date;
-        let isInit = true;
-        let clearToken = () => {
-            if (token2) token2.dispose();
+        latest = new Date();
+    };
+    let startProc = (delay: number | boolean, source: ScheduleTaskSourceContract) => {
+        isInit = false;
+        clearToken();
+        token2 = DataSense.delay(() => {
             token2 = null;
-            if (!token) return;
-            clearInterval(token);
-            token = null;
-        };
-        let process = (source: ScheduleTaskSourceContract) => {
-            processDate = new Date();
-            h({
-                startDate,
-                latestStopDate: stopDate,
-                processDate,
-                latestProcessDate: latest,
-                span,
-                source
-            });
-            latest = new Date();
-        };
-        let startProc = (delay: number | boolean, source: ScheduleTaskSourceContract) => {
-            isInit = false;
-            clearToken();
-            token2 = HitTask.delay(() => {
-                token2 = null;
-                process(source);
-                token = setInterval(() => {
-                    process("schedule");
-                }, span);
-            }, delay);
-        };
-        let task = {
-            start(isPlan?: number | boolean) {
-                let delay: number | boolean = false;
-                let source: ScheduleTaskSourceContract = isPlan ? "plan" : "start";
-                if (startDate) source = ("re" + source) as any;
-                if (typeof isPlan === "number") delay = isPlan;
-                else if (isPlan === true) delay = span;
-                startProc(delay, source);
-            },
-            process() {
-                process("immediate");
-            },
-            resume(isPlan?: number | boolean) {
-                if (token || token2) return;
-                if (isInit || !stopDate || !startDate) {
-                    startProc(isPlan, startDate ? "restart" : "resume");
-                    return;
-                }
-
-                let delay: boolean | number = span - stopDate.getTime() - startDate.getTime();
-                if (delay <= 0) delay = false;
-                startProc(delay, "resume");
-            },
-            pause() {
-                clearToken();
-                stopDate = new Date();
-            },
-            stop() {
-                clearToken();
-                stopDate = new Date();
-                isInit = true;
-            },
-            get alive() {
-                return token || token2;
+            process(source);
+            token = setInterval(() => {
+                process("schedule");
+            }, span);
+        }, delay);
+    };
+    let task = {
+        start(isPlan?: number | boolean) {
+            let delay: number | boolean = false;
+            let source: ScheduleTaskSourceContract = isPlan ? "plan" : "start";
+            if (startDate) source = ("re" + source) as any;
+            if (typeof isPlan === "number") delay = isPlan;
+            else if (isPlan === true) delay = span;
+            startProc(delay, source);
+        },
+        process() {
+            process("immediate");
+        },
+        resume(isPlan?: number | boolean) {
+            if (token || token2) return;
+            if (isInit || !stopDate || !startDate) {
+                startProc(isPlan, startDate ? "restart" : "resume");
+                return;
             }
-        };
-        return task;
-    }
+
+            let delay: boolean | number = span - stopDate.getTime() - startDate.getTime();
+            if (delay <= 0) delay = false;
+            startProc(delay, "resume");
+        },
+        pause() {
+            clearToken();
+            stopDate = new Date();
+        },
+        stop() {
+            clearToken();
+            stopDate = new Date();
+            isInit = true;
+        },
+        get alive() {
+            return token || token2;
+        }
+    };
+    return task;
 }
 
 }
