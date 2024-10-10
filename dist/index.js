@@ -1094,6 +1094,7 @@ var DataSense;
                     },
                     dispose: function () {
                         implInstance.remove(null, obj);
+                        implInstance.removeDisposable(disposableResult);
                         disposableResult.dispose = function () { };
                         disposableResult.isDisposed = true;
                     }

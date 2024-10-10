@@ -542,6 +542,7 @@ export class EventObservable implements DisposableArrayContract {
                 },
                 dispose() {
                     implInstance.remove(null, obj);
+                    implInstance.removeDisposable(disposableResult);
                     disposableResult.dispose = () => { };
                     disposableResult.isDisposed = true;
                 }
