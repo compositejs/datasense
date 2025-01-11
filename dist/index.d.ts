@@ -852,9 +852,49 @@ declare namespace DataSense {
         /**
          * Gets the details information of the specific key.
          * @param key  The property key.
+         * @returns  The prop details.
          */
         getPropDetails<T>(key: string): PropDetailsContract<T>;
+        /**
+         * Gets a set of property values.
+         * @param keys  The property keys.
+         * @returns  The property values in an array.
+         */
+        getPropsArray(keys: string[]): any[];
+        /**
+         * Gets a set of property values.
+         * @param keys  The property keys.
+         * @returns  The property values in an array.
+         */
+        getPropsObject(keys: string[]): {
+            [property: string]: any;
+        };
+        /**
+         * Gets a set of property values.
+         * @param obj  The target object to set properties.
+         * @param keys  The property keys.
+         * @param ignoreIfExists  true if ignore to set property if already have one; otherwise, false.
+         * @returns  The count of property to set.
+         */
+        fillPropsObject(obj: any, keys: string[], ignoreIfExists?: boolean): number;
+        /**
+         * Gets the details information of the specific key.
+         * @param keys  The property keys.
+         * @returns  The prop details array.
+         */
+        getPropsDetails(keys: string[]): PropDetailsContract<any>[];
+        /**
+         * Registers a flow so that it will be occurred as a pipeline when the property is changed.
+         * @param key  The property key.
+         * @param value  The flows.
+         * @returns  The state of register.
+         */
         registerChangeFlow(key: string, ...value: ValueModifierContract<any>[]): ChangeFlowRegisteredContract;
+        /**
+         * Clears all flow of the specific property changing.
+         * @param key  The property key.
+         * @returns  The count of flow removed.
+         */
         clearChangeFlow(key: string): number;
         /**
          * Registers an event listener on the speicific property is changing.

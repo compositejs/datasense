@@ -331,15 +331,103 @@ export class PropsObservable implements DisposableArrayContract {
     /**
      * Gets the details information of the specific key.
      * @param key  The property key.
+     * @returns  The prop details.
      */
-    public getPropDetails<T>(key: string): PropDetailsContract<T> {
+    public getPropDetails<T>(key: string) {
         return this._instance.getDetails<T>(key);
     }
 
+    /**
+     * Gets a set of property values.
+     * @param keys  The property keys.
+     * @returns  The property values in an array.
+     */
+    public getPropsArray(keys: string[]) {
+        let arr = [];
+        for (var key in keys) {
+            arr.push(this._instance.get(key));
+        }
+
+        return arr;
+    }
+
+    /**
+     * Gets a set of property values.
+     * @param keys  The property keys.
+     * @returns  The property values in an array.
+     */
+    public getPropsObject(keys: string[]) {
+        let obj = {} as any as { [property: string]: any };
+        for (var key in keys) {
+            let v = this._instance.get(key);
+            if (v !== undefined) obj[key] = v;
+        }
+
+        return obj;
+    }
+
+    /**
+     * Gets a set of property values.
+     * @param obj  The target object to set properties.
+     * @param keys  The property keys.
+     * @param ignoreIfExists  true if ignore to set property if already have one; otherwise, false.
+     * @returns  The count of property to set.
+     */
+    public fillPropsObject(obj: any, keys: string[], ignoreIfExists = false) {
+        if (!obj) return;
+        let i = 0;
+        if (!ignoreIfExists) {
+            for (var key in keys) {
+                let v = this._instance.get(key);
+                if (v === undefined) continue;
+                obj[key] = v;
+                i++;
+            }
+    
+            return i;
+        }
+
+        let props = Object.getOwnPropertyNames(obj);
+        for (var key in keys) {
+            if (props.indexOf(key) >= 0) continue;
+            let v = this._instance.get(key);
+            if (v === undefined) continue;
+            obj[key] = v;
+            i++;
+        }
+
+        return i;
+    }
+
+    /**
+     * Gets the details information of the specific key.
+     * @param keys  The property keys.
+     * @returns  The prop details array.
+     */
+    public getPropsDetails(keys: string[]) {
+        let arr: PropDetailsContract<any>[] = [];
+        for (var key in keys) {
+            arr.push(this._instance.getDetails(key))
+        }
+        
+        return arr;
+    }
+
+    /**
+     * Registers a flow so that it will be occurred as a pipeline when the property is changed.
+     * @param key  The property key.
+     * @param value  The flows.
+     * @returns  The state of register.
+     */
     public registerChangeFlow(key: string, ...value: ValueModifierContract<any>[]) {
         return this._instance.pushFlows(key, ...value);
     }
 
+    /**
+     * Clears all flow of the specific property changing.
+     * @param key  The property key.
+     * @returns  The count of flow removed.
+     */
     public clearChangeFlow(key: string) {
         return this._instance.clearFlows(key);
     }
