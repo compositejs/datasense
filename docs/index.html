@@ -3,16 +3,20 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta property="og:image" content="images/bg/poster.jpg">
+    <meta property="og:image" content="./images/bg/poster.jpg">
     <title>DataSense</title>
     <link href="https://kingcean.org/css/layout.css" rel="stylesheet" />
     <link href="https://kingcean.org/css/current.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="./images/logos/datasense.png">
     <style type="text/css">
     body > section {
         margin-bottom: 100px;
     }
-    header + section > section:first-child + section > div {
-        font-size: 16px;
+    header + section > section:first-child + section.x-part-intro > div {
+        font-size: 16px; padding-right: 69px; position: relative;
+    }
+    header + section > section:first-child + section.x-part-intro > div > div > img {
+        position: absolute; top: 20px; right: 16px; width: 48px; height: 48px;
     }
     section.x-part-intro > div {
         padding: 9px; margin-bottom: 10px; border: 1px solid #333; border-radius: 4px; position: relative;
@@ -95,6 +99,7 @@
         <section class="x-part-intro">
             <div>
                 <div>
+                    <img alt="DataSense" src="./images/logos/datasense.png" />
                     <strong>DataSense</strong><br />
                     <span>provides lots of powerful low-level APIs for the management of observable, events and tasks.</span>
                     </span>You can build your business logic apps or technical libraries based on this,
