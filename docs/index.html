@@ -20,8 +20,20 @@
     section.x-part-intro > div > div {
         margin: 10px;
     }
+    section.x-part-intro.x-part-installation > div {
+        border-radius: 0;
+    }
+    section.x-part-intro.x-part-installation > div:first-child {
+        border-radius: 4px 4px 0 0;
+    }
+    section.x-part-intro.x-part-installation > div:last-child {
+        border-radius: 0 0 4px 4px;
+    }
     section.x-part-installation > div > div:first-child, section.x-part-installation > div > img + div {
         margin-top: 0;
+    }
+    section.x-part-installation > div > div:last-child {
+        margin-bottom: 0;
     }
     section.x-part-installation > div > div > span {
         user-select: none;
@@ -121,28 +133,33 @@
                     </code>
                 </div>
             </div>
+            <div>
+                <div>
+                    <a href="./articles/?installation" >Get details &gt;</a>
+                </div>
+            </div>
         </section>
         <h2>Features</h2>
         <section class="x-part-features">
-            <a class="link-long-button" href="https://github.com/compositejs/datasense/wiki/task" >
+            <a class="link-long-button" href="./articles/?task" >
                 <span>Task</span><br />
                 <span>
                     <span>A way to control how process a given handler including debounce, throttle, multiple hits, etc.</span>
                 </span>
             </a>
-            <a class="link-long-button" href="https://github.com/compositejs/datasense/wiki/event" >
+            <a class="link-long-button" href="./articles/?event" >
                 <span>Event</span><br />
                 <span>
                     <span>A place to add event listeners and raise events with additional information and utilities supports, such as the one the tasks provided.</span>
                 </span>
             </a>
-            <a class="link-long-button" href="https://github.com/compositejs/datasense/wiki/value" >
+            <a class="link-long-button" href="./articles/?value" >
                 <span>Value</span><br />
                 <span>
                     <span>The controller and observable for a variable so that you can access it and subscribe its changing.</span>
                 </span>
             </a>
-            <a class="link-long-button" href="https://github.com/compositejs/datasense/wiki/props" >
+            <a class="link-long-button" href="./articles/?props" >
                 <span>Props</span><br />
                 <span>
                     <span>The controller and observable for a set of variables with keys. They are like the property of an object. You can access and observe them.</span>

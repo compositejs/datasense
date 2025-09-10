@@ -48,7 +48,7 @@ events.on("click", (ev, listenerController) => {
 });
 ```
 
-The property `invalid` in the 3rd argument is used to dispose the event listener automatically after it is processed equals or more than the given times. You can also set it as `true` if you want to make it only once raising. And you can set `invalidForNextTime` property if you still want to process this handler even if it touches the invalid count and then dispose. And you can also set further properties to support debounce, throttle or multiple hits, see [task](./task.md), these properties are as same as the hit task options.
+The property `invalid` in the 3rd argument is used to dispose the event listener automatically after it is processed equals or more than the given times. You can also set it as `true` if you want to make it only once raising. And you can set `invalidForNextTime` property if you still want to process this handler even if it touches the invalid count and then dispose. And you can also set further properties to support debounce, throttle or multiple hits, see [task](../task/), these properties are as same as the hit task options.
 
 The result of `on` has a number of properties and methods to get the key, fire manually, dispose, etc.
 
@@ -148,6 +148,7 @@ obs.on(ev => {
 
 The `obs` variable is a single event observable.
 
+<!-- End -->
 ---
 
-[Next](./value.md)
+[Next](../value/)

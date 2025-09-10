@@ -56,7 +56,7 @@ value.validator = newValue => !!newValue;
 
 ## Event listener
 
-You can add an event listener which will be raised after the value is changed. And you can get the listener controller introduced by [event](./event.md).
+You can add an event listener which will be raised after the value is changed. And you can get the listener controller introduced by [event](../event/).
 
 ```typescript
 // Add event listener on changed.
@@ -199,6 +199,7 @@ value2.observe(value);
 
 To stop observing, you can call `stopObserving` member method.
 
+<!-- End -->
 ---
 
-[Next](./props.md)
+[Next](../props/)

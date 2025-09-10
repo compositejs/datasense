@@ -142,6 +142,7 @@ valueObs.onNotifyReceived(ev => {
 value.sendNotify("This is a notification.");
 ```
 
+<!-- End -->
 ---
 
-[Back home](../README.md)
+[Back home](../../../)
