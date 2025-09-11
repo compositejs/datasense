@@ -36,6 +36,9 @@
     section.x-part-intro.x-part-installation > div:last-child > div:first-child > a:first-child {
         display: block;
     }
+    section.x-part-intro.x-part-installation > div:last-child > div:first-child > a:first-child > span:last-child::after {
+        content: " >";
+    }
     section.x-part-installation > div > div:first-child, section.x-part-installation > div > img + div {
         margin-top: 0;
     }
@@ -50,6 +53,9 @@
     }
     section.x-part-installation > div > div.x-part-code:hover {
         border-bottom: 1px solid #484848;
+    }
+    section.x-part-installation > div > div.x-part-code > span:has(+ code) {
+        margin-right: 10px;
     }
     section.x-part-installation > div:first-child {
         padding-left: 54px;
@@ -73,10 +79,17 @@
         border-color: #444;
     }
     </style>
+    <script type="text/javascript" src="https://kingcean.org/js/site.js" ></script>
     <script type="text/javascript">
+    function onInit() {
+        site.getString("installation", "title-install");
+        site.getString("features", "title-features");
+        site.getString("sourceCode", "title-source");
+        site.getString("getDetails", "link-install");
+    }
     </script>
 </head>
-<body>
+<body onload="onInit()">
     <header>
         <section>
             <h1><a href="https://composite.js.org"><strong>Composite</strong><span>Js</span></a></h1>
@@ -110,7 +123,7 @@
                 </div>
             </div>
         </section>
-        <h2>Installation</h2>
+        <h2 id="title-install">Installation</h2>
         <section class="x-part-installation x-part-intro">
             <div>
                 <img alt="npm" src="https://static-production.npmjs.com/f1786e9b7cba9753ca7b9c40e8b98f67.png" />
@@ -118,7 +131,7 @@
                     <span>Install package to your project by <a href="https://www.npmjs.com/package/datasense" >npm</a>.</span>
                 </div>
                 <div class="x-part-code">
-                    <span>&gt; </span><code><span style="color: #f9f1a5;">npm</span> <span style="color: #CCC;">i datasense</span></code>
+                    <span>&gt;</span><code><span style="color: #f9f1a5;">npm</span> <span style="color: #CCC;">i datasense</span></code>
                 </div>
             </div>
             <div>
@@ -142,11 +155,11 @@
             </div>
             <div>
                 <div>
-                    <a href="./articles/?installation" >Get details &gt;</a>
+                    <a href="./articles/?installation" ><span id="link-install">Get details</span></a>
                 </div>
             </div>
         </section>
-        <h2>Features</h2>
+        <h2 id="title-features">Features</h2>
         <section class="x-part-features">
             <a class="link-long-button" href="./articles/?task" >
                 <span>Task</span><br />
@@ -173,7 +186,7 @@
                 </span>
             </a>
         </section>
-        <h2>Source</h2>
+        <h2 id="title-source">Source</h2>
         <section>
             <a class="link-long-button" href="https://github.com/compositejs/datasense/" >
                 <svg height="24" aria-hidden="true" viewBox="0 0 16 16" version="1.1" width="24" data-view-component="true" class="octicon octicon-mark-github v-align-middle">

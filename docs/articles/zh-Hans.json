@@ -2,35 +2,6 @@
     "name": "DataSense",
     "wiki": [
         {
-            "name": "Installation",
-            "url": "/wiki/installation/README.md",
-            "categories": ["install", "prepare", "npm"],
-            "end": true
-        },
-        {
-            "name": "Task",
-            "url": "/wiki/task/README.md",
-            "end": true
-        },
-        {
-            "name": "Event",
-            "url": "/wiki/event/README.md",
-            "end": true
-        },
-        {
-            "name": "Value",
-            "url": "/wiki/value/README.md",
-            "categories": ["observable"],
-            "end": true
-        },
-        {
-            "name": "Props",
-            "url": "/wiki/props/README.md",
-            "categories": ["observable"],
-            "end": true
-        },
-        "简体中文",
-        {
             "name": "安装",
             "url": "/wiki/anzhuang/README.md",
             "categories": ["install", "prepare", "npm"],
@@ -58,5 +29,13 @@
             "categories": ["observable"],
             "end": true
         }
-    ]
+    ],
+    "redir": {
+        "installation": "anzhuang",
+        "install": "anzhuang",
+        "task": "renwu",
+        "event": "shijian",
+        "value": "duixiang",
+        "props": "shuxingjihe"
+    }
 }
