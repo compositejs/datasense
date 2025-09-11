@@ -28,6 +28,35 @@
             "url": "/wiki/props/README.md",
             "categories": ["observable"],
             "end": true
+        },
+        "简体中文",
+        {
+            "name": "安装",
+            "url": "/wiki/anzhuang/README.md",
+            "categories": ["install", "prepare", "npm"],
+            "end": true
+        },
+        {
+            "name": "任务",
+            "url": "/wiki/renwu/README.md",
+            "end": true
+        },
+        {
+            "name": "事件",
+            "url": "/wiki/shijian/README.md",
+            "end": true
+        },
+        {
+            "name": "对象",
+            "url": "/wiki/duixiang/README.md",
+            "categories": ["observable"],
+            "end": true
+        },
+        {
+            "name": "属性集合",
+            "url": "/wiki/shuxingjihe/README.md",
+            "categories": ["observable"],
+            "end": true
         }
     ]
 }
