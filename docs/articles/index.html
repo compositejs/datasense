@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta property="og:image" content="../images/bg/poster.jpg">
     <title>DataSense</title>
-    <link href="https://kingcean.org/css/layout.css" rel="stylesheet" />
-    <link href="https://kingcean.org/css/current.css" rel="stylesheet" />
-    <link rel="icon" type="image/png" href="./images/logos/datasense.png">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" ></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@1.1.0/dist/index.js" ></script>
+    <link href="https://cdn.jsdelivr.net/npm/hje@2.0.0/docs/css/site.org.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/npm/hje@2.0.0/docs/images/logos/datasense.png">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.0.0/dist/index.js" ></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/marked@16.2.1/lib/marked.umd.js" ></script>
-    <script type="text/javascript" src="https://kingcean.org/js/site.js" ></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.0.0/docs/js/site.js" ></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.0.0/docs/js/current.js" ></script>
 </head>
 <body>
     <header>
@@ -31,10 +30,7 @@
         </section>
     </header>
     <script type="text/javascript">
-        site.blogs({
-            rootPath: "articles",
-            menuPath: site.getString("name") === "名称" ? "zh-Hans.json" : "en.json"
-        });
+        curSite.initWiki();
     </script>
     <footer>
         <section>

@@ -5,87 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta property="og:image" content="./images/bg/poster.jpg">
     <title>DataSense</title>
-    <link href="https://kingcean.org/css/layout.css" rel="stylesheet" />
-    <link href="https://kingcean.org/css/current.css" rel="stylesheet" />
-    <link rel="icon" type="image/png" href="./images/logos/datasense.png">
-    <style type="text/css">
-    body > section {
-        margin-bottom: 100px;
-    }
-    header + section > section:first-child + section.x-part-intro > div {
-        font-size: 16px; padding-right: 69px; position: relative;
-    }
-    header + section > section:first-child + section.x-part-intro > div > div > img {
-        position: absolute; top: 20px; right: 16px; width: 48px; height: 48px;
-    }
-    section.x-part-intro > div {
-        padding: 9px; margin-bottom: 10px; border: 1px solid #333; border-radius: 4px; position: relative;
-    }
-    section.x-part-intro > div > div {
-        margin: 10px;
-    }
-    section.x-part-intro.x-part-installation > div {
-        border-radius: 0;
-    }
-    section.x-part-intro.x-part-installation > div:first-child {
-        border-radius: 4px 4px 0 0;
-    }
-    section.x-part-intro.x-part-installation > div:last-child {
-        border-radius: 0 0 4px 4px;
-    }
-    section.x-part-intro.x-part-installation > div:last-child > div:first-child > a:first-child {
-        display: block;
-    }
-    section.x-part-intro.x-part-installation > div:last-child > div:first-child > a:first-child > span:last-child::after {
-        content: " >";
-    }
-    section.x-part-installation > div > div:first-child, section.x-part-installation > div > img + div {
-        margin-top: 0;
-    }
-    section.x-part-installation > div > div:last-child {
-        margin-bottom: 0;
-    }
-    section.x-part-installation > div > div > span {
-        user-select: none;
-    }
-    section.x-part-installation > div > div.x-part-code {
-        background-color: #2C2C2C; padding: 10px 10px 9px 10px; margin: 10px 0 0 0; border-bottom: 1px solid #393939; border-radius: 4px; transition: 0.2s; overflow-x: auto; scrollbar-color: rgba(128, 128, 128, 0.2) transparent;
-    }
-    section.x-part-installation > div > div.x-part-code:hover {
-        border-bottom: 1px solid #484848;
-    }
-    section.x-part-installation > div > div.x-part-code > span:has(+ code) {
-        margin-right: 10px;
-    }
-    section.x-part-installation > div:first-child {
-        padding-left: 54px;
-    }
-    section.x-part-installation > div:first-child > img {
-        width: 32px; height: 32px; border-radius: 0 0 4px 4px; position: absolute; top: 0; left: 10px;
-    }
-    section.x-part-installation > div:first-child > img + div {
-        margin-left: 0;
-    }
-    section.x-part-features > a.link-long-button, section.x-part-features > a.link-long-button:visited, section.x-part-features > a.link-long-button:active {
-        padding: 14px 24px 14px 24px;
-    }
-    section.x-part-features > a.link-long-button:hover {
-        padding: 12px 24px 16px 24px;
-    }
-    section.x-part-features > div > div.x-part-code {
-        background-color: #2C2C2C; padding: 9px; margin: 10px; border: 1px solid #333; border-radius: 4px; transition: 0.2s; overflow-x: auto; scrollbar-color: rgba(128, 128, 128, 0.2) transparent;
-    }
-    section.x-part-features > div > div.x-part-code:hover {
-        border-color: #444;
-    }
-    </style>
-    <script type="text/javascript" src="https://kingcean.org/js/site.js" ></script>
+    <link href="https://cdn.jsdelivr.net/npm/hje@2.0.0/docs/css/site.org.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/hje@2.0.0/docs/css/spec.home.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/npm/hje@2.0.0/docs/images/logos/datasense.png">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.0.0/dist/index.js" ></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.0.0/docs/js/site.js" ></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.0.0/docs/js/current.js" ></script>
     <script type="text/javascript">
     function onInit() {
-        site.getString("installation", "title-install");
-        site.getString("features", "title-features");
-        site.getString("sourceCode", "title-source");
-        site.getString("getDetails", "link-install");
+        let manifest = { name: 'datasense', path: 'dist/index.js' };
+        curSite.initHome(manifest);
+        let ww = site.getString("name") !== "名称";
     }
     </script>
 </head>
@@ -115,52 +45,30 @@
         <section class="x-part-intro">
             <div>
                 <div>
-                    <img alt="DataSense" src="./images/logos/datasense.png" />
+                    <img alt="DataSense" src="https://cdn.jsdelivr.net/npm/hje@2.0.0/docs/images/logos/datasense.png" />
                     <strong>DataSense</strong><br />
                     <span>provides lots of powerful low-level APIs for the management of observable, events and tasks.</span>
                     </span>You can build your business logic apps or technical libraries based on this,
-                        including one/two-way-bindings, observing, subscript management and time sequence controlling.</span>
+                        including one/two-way-bindings, observing, subscribe management and time sequence controlling.</span>
                 </div>
             </div>
         </section>
         <h2 id="title-install">Installation</h2>
-        <section class="x-part-installation x-part-intro">
+        <section id="part-install" class="x-part-installation x-part-intro">
             <div>
                 <img alt="npm" src="https://static-production.npmjs.com/f1786e9b7cba9753ca7b9c40e8b98f67.png" />
                 <div>
-                    <span>Install package to your project by <a href="https://www.npmjs.com/package/datasense" >npm</a>.</span>
+                    <span><a href="https://www.npmjs.com/package/hje" >Package</a></span>
+                    <span> &nbsp; | &nbsp; </span>
+                    <a href="./articles/?installation" >Get details &gt;</a>
                 </div>
                 <div class="x-part-code">
-                    <span>&gt;</span><code><span style="color: #f9f1a5;">npm</span> <span style="color: #CCC;">i datasense</span></code>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <span>Or you can insert <strong>one of</strong> following JavaScript bundled file by <code>script</code> tag into your web page.</span>
-                </div>
-                <div class="x-part-code">
-                    <code>
-                        <span style="color: #808080;">&lt;</span><span style="color: #5c9bd3;">script</span>
-                        <span style="color: #a1dbfc">src</span>=<span style="color: #cb927b">&quot;</span><span style="color: #cb927b">https://cdn.jsdelivr.net/npm/datasense/dist/index.js</span><span style="color: #cb927b">&quot;</span>
-                        <span style="color: #808080;">/&gt;</span>
-                    </code>
-                </div>
-                <div class="x-part-code">
-                    <code>
-                        <span style="color: #808080;">&lt;</span><span style="color: #5c9bd3;">script</span>
-                        <span style="color: #a1dbfc">src</span>=<span style="color: #cb927b">&quot;</span><span style="color: #cb927b">https://unpkg.com/datasense/dist/index.js</span><span style="color: #cb927b">&quot;</span>
-                        <span style="color: #808080;">/&gt;</span>
-                    </code>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <a href="./articles/?installation" ><span id="link-install">Get details</span></a>
+                    <span>&gt;</span><code>npm i datasense</code>
                 </div>
             </div>
         </section>
         <h2 id="title-features">Features</h2>
-        <section class="x-part-features">
+        <section id="part-features" class="x-part-features">
             <a class="link-long-button" href="./articles/?task" >
                 <span>Task</span><br />
                 <span>

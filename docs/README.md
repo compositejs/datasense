@@ -17,7 +17,7 @@ And you can also insert one of following JavaScript bundled file by `script` tag
 
 ## Features
 
-DataSense provides lots of powerful low-level APIs for the management of observable, events and tasks. You can build your business logic apps or technical libraries based on this, including one/two-way-bindings, observing, subscript management and time sequence controlling.
+DataSense provides lots of powerful low-level APIs for the management of observable, events and tasks. You can build your business logic apps or technical libraries based on this, including one/two-way-bindings, observing, subscribe management and time sequence controlling.
 
 Following are the key features that you can click to read more. The samples are written by Type Script by default in these documents.
 
