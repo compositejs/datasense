@@ -16,6 +16,39 @@
         let manifest = { name: 'datasense', path: 'dist/index.js' };
         curSite.initHome(manifest);
         let ww = site.getString("name") !== "名称";
+        curSite.listModel(ww ? [{
+            name: "Task",
+            url: "./articles/?task",
+            desc: "A way to control how process a given handler including debounce, throttle, multiple hits, etc."
+        }, {
+            name: "Event",
+            url: "./articles/?event",
+            desc: "A place to add event listeners and raise events with additional information and utilities supports, such as the one the tasks provided."
+        }, {
+            name: "Value",
+            url: "./articles/?value",
+            desc: "The controller and observable for a variable so that you can access it and subscribe its changing."
+        }, {
+            name: "Props",
+            url: "./articles/?props",
+            desc: "The controller and observable for a set of variables with keys. They are like the property of an object. You can access and observe them."
+        }] : [{
+            name: "任务",
+            url: "./articles/?task",
+            desc: "A way to control how process a given handler including debounce, throttle, multiple hits, etc."
+        }, {
+            name: "事件",
+            url: "./articles/?event",
+            desc: "A place to add event listeners and raise events with additional information and utilities supports, such as the one the tasks provided."
+        }, {
+            name: "对象",
+            url: "./articles/?value",
+            desc: "The controller and observable for a variable so that you can access it and subscribe its changing."
+        }, {
+            name: "属性集合",
+            url: "./articles/?props",
+            desc: "The controller and observable for a set of variables with keys. They are like the property of an object. You can access and observe them."
+        }], "part-features");
     }
     </script>
 </head>
