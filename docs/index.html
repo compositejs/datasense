@@ -35,20 +35,23 @@
         }] : [{
             name: "任务",
             url: "./articles/?task",
-            desc: "A way to control how process a given handler including debounce, throttle, multiple hits, etc."
+            desc: "防抖、节流、次数控制，以及更高级的多轮动作执行筛选响应设定。"
         }, {
             name: "事件",
             url: "./articles/?event",
-            desc: "A place to add event listeners and raise events with additional information and utilities supports, such as the one the tasks provided."
+            desc: "统一管理事件，支持触发时机管理、分层管理和附加信息支持。"
         }, {
             name: "对象",
             url: "./articles/?value",
-            desc: "The controller and observable for a variable so that you can access it and subscribe its changing."
+            desc: "一个用于存储单一数据的容器，可监听其变更情况。"
         }, {
             name: "属性集合",
             url: "./articles/?props",
-            desc: "The controller and observable for a set of variables with keys. They are like the property of an object. You can access and observe them."
+            desc: "提供多项数据的存储、读写和监听能力，支持定义更新策略，也支持分层管理。"
         }], "part-features");
+        if (ww) return;
+        curSite.setText("text-summary", "本前端库提供任务、监听、事件、数据绑定等能力。");
+        curSite.setText("text-intro", "提供许多底层数据和数据流相关的访问控制能力，包括双向绑定、事件与订阅管理、时序控制、通知，以及对这些信息的基础层级读写管控。");
     }
     </script>
 </head>
@@ -72,7 +75,7 @@
     <section>
         <section>
             <div>
-                <span>A JavaScript library of observable, events and advanced model.</span>
+                <span id="text-summary">A JavaScript library of observable, events and advanced model.</span>
             </div>
         </section>
         <section class="x-part-intro">
@@ -80,8 +83,8 @@
                 <div>
                     <img alt="DataSense" src="https://cdn.jsdelivr.net/npm/hje@2.0.0/docs/images/logos/datasense.png" />
                     <strong>DataSense</strong><br />
-                    <span>provides lots of powerful low-level APIs for the management of observable, events and tasks.</span>
-                    </span>You can build your business logic apps or technical libraries based on this,
+                    <span id="text-intro">provides lots of powerful low-level APIs for the management of observable, events and tasks.
+                        You can build your business logic apps or technical libraries based on this,
                         including one/two-way-bindings, observing, subscribe management and time sequence controlling.</span>
                 </div>
             </div>
