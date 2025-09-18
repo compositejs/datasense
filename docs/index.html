@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta property="og:image" content="./images/bg/poster.jpg">
     <title>DataSense</title>
-    <link href="https://cdn.jsdelivr.net/npm/hje@2.1.0/docs/css/site.org.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/hje@2.1.0/docs/css/spec.home.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/hje@2.2.0/docs/css/site.org.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/hje@2.2.0/docs/css/spec.home.css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/npm/hje@2.0.0/docs/images/logos/datasense.png">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.1.0/dist/index.js" ></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.1.0/docs/js/site.js" ></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.1.0/docs/js/current.js" ></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/vs2015.min.css" rel="stylesheet" />
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.2.0/docs/js/site.bundle.js" ></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.2.0/docs/js/current.js" ></script>
     <script type="text/javascript">
     function onInit() {
         let manifest = { name: 'datasense', path: 'dist/index.js' };
@@ -50,8 +51,8 @@
             desc: "提供多项数据的存储、读写和监听能力，支持定义更新策略，也支持分层管理。"
         }], "part-features");
         if (ww) return;
-        curSite.setText("text-summary", "本前端库提供任务、监听、事件、数据绑定等能力。");
-        curSite.setText("text-intro", "提供许多底层数据和数据流相关的访问控制能力，包括双向绑定、事件与订阅管理、时序控制、通知，以及对这些信息的基础层级读写管控。");
+        site.setElementProp("text-summary", null, "本前端库提供任务、监听、事件、数据绑定等能力。");
+        site.setElementProp("text-intro", null, "提供许多底层数据和数据流相关的访问控制能力，包括双向绑定、事件与订阅管理、时序控制、通知，以及对这些信息的基础层级读写管控。");
     }
     </script>
 </head>
