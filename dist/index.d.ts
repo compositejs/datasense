@@ -1020,7 +1020,16 @@ declare namespace DataSense {
          * Creates an object with properties copied from this.
          */
         copyModel(): any;
-        toJSON(): string;
+        /**
+         * Converts to the source object for JSON stringifying.
+         * @returns The JSON object used to stringify.
+         */
+        toJSON(): any;
+        /**
+         * Converts to a JSON string.
+         * @returns The JSON string.
+         */
+        stringify(): string;
         /**
          * Disposes the instance.
          */

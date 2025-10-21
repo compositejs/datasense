@@ -710,12 +710,21 @@ export class PropsObservable implements DisposableArrayContract {
         return obj;
     }
 
+    /**
+     * Converts to the source object for JSON stringifying.
+     * @returns The JSON object used to stringify.
+     */
     public toJSON() {
-        let value = this.copyModel();
-        try {
-            if (value != null) return JSON.stringify(value);
-        } catch (ex) {}
-        return (new String(value)).toString();
+        return this.copyModel();
+    }
+
+    /**
+     * Converts to a JSON string.
+     * @returns The JSON string.
+     */
+    public stringify() {
+        let obj = this.copyModel();
+        return JSON.stringify(obj);
     }
 
     /**

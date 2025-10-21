@@ -1,11 +1,11 @@
 {
   "name": "datasense",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "A set of powerful utilities and classes for accessing and observing data.",
   "main": "index.js",
   "types": "./index.d.ts",
   "scripts": {
-    "build": "tsc --project ./src/tsconfig.json && gulp",
+    "build": "tsc --project ./src/tsconfig.json && terser ./dist/index.js --compress -o ./dist/index.js",
     "test": "node ./test/index.js"
   },
   "repository": {
@@ -25,13 +25,9 @@
   "bugs": {
     "url": "https://github.com/compositejs/datasense/issues"
   },
-  "homepage": "https://github.com/compositejs/datasense/wiki",
+  "homepage": "https://datasense.js.org/",
   "devDependencies": {
-    "gulp": "^4.0.2",
-    "gulp-sourcemaps": "^3.0.0",
-    "gulp-typescript": "^5.0.1",
-    "gulp-terser": "^2.1.0",
-    "gulp-uglify": "^3.0.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.9.2",
+    "terser": "^5.44.0"
   }
 }
