@@ -5,54 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta property="og:image" content="./images/bg/poster.jpg">
     <title>DataSense</title>
-    <link href="https://cdn.jsdelivr.net/npm/hje@2.2.0/docs/css/site.org.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/hje@2.3.1/docs/css/site.org.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/hje@2.2.0/docs/css/spec.home.css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/npm/hje@2.0.0/docs/images/logos/datasense.png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/vs2015.min.css" rel="stylesheet" />
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.2.0/docs/js/site.bundle.js" ></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.2.0/docs/js/current.js" ></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.3.1/docs/js/mdblogs.js" ></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hje@2.3.1/docs/js/current.js" ></script>
     <script type="text/javascript">
     function onInit() {
         let manifest = { name: 'datasense', path: 'dist/index.js' };
         curSite.initHome(manifest);
-        let ww = site.getString("name") !== "名称";
+        let ww = DeepX.MdBlogs.getLocaleString("name") !== "名称";
         curSite.listModel(ww ? [{
             name: "Task",
-            url: "./articles/?task",
+            url: "./articles/?wiki/task",
             desc: "A way to control how process a given handler including debounce, throttle, multiple hits, etc."
         }, {
             name: "Event",
-            url: "./articles/?event",
+            url: "./articles/?wiki/event",
             desc: "A place to add event listeners and raise events with additional information and utilities supports, such as the one the tasks provided."
         }, {
             name: "Value",
-            url: "./articles/?value",
+            url: "./articles/?wiki/value",
             desc: "The controller and observable for a variable so that you can access it and subscribe its changing."
         }, {
             name: "Props",
-            url: "./articles/?props",
+            url: "./articles/?wiki/props",
             desc: "The controller and observable for a set of variables with keys. They are like the property of an object. You can access and observe them."
         }] : [{
             name: "任务",
-            url: "./articles/?task",
+            url: "./articles/?wiki/renwu",
             desc: "防抖、节流、次数控制，以及更高级的多轮动作执行筛选响应设定。"
         }, {
             name: "事件",
-            url: "./articles/?event",
+            url: "./articles/?wiki/shijian",
             desc: "统一管理事件，支持触发时机管理、分层管理和附加信息支持。"
         }, {
             name: "对象",
-            url: "./articles/?value",
+            url: "./articles/?wiki/duixiang",
             desc: "一个用于存储单一数据的容器，可监听其变更情况。"
         }, {
             name: "属性集合",
-            url: "./articles/?props",
+            url: "./articles/?wiki/shuxingjihe",
             desc: "提供多项数据的存储、读写和监听能力，支持定义更新策略，也支持分层管理。"
         }], "part-features");
         if (ww) return;
-        site.setElementProp("text-summary", null, "本前端库提供任务、监听、事件、数据绑定等能力。");
-        site.setElementProp("text-intro", null, "提供许多底层数据和数据流相关的访问控制能力，包括双向绑定、事件与订阅管理、时序控制、通知，以及对这些信息的基础层级读写管控。");
+        DeepX.MdBlogs.setElementProp("text-summary", null, "本前端库提供任务、监听、事件、数据绑定等能力。");
+        DeepX.MdBlogs.setElementProp("text-intro", null, "提供许多底层数据和数据流相关的访问控制能力，包括双向绑定、事件与订阅管理、时序控制、通知，以及对这些信息的基础层级读写管控。");
     }
     </script>
 </head>
@@ -97,7 +97,7 @@
                 <div>
                     <span><a href="https://www.npmjs.com/package/hje" >Package</a></span>
                     <span> &nbsp; | &nbsp; </span>
-                    <a class="x-link-more" href="./articles/?installation" ><span>Get details</span></a>
+                    <a class="x-link-more" href="./articles/?wiki/installation" ><span>Get details</span></a>
                 </div>
                 <div class="x-part-code">
                     <span>&gt;</span><code>npm i datasense</code>

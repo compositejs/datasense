@@ -1,10 +1,12 @@
 {
     "compilerOptions": {
+        "strict": false,
+        "forceConsistentCasingInFileNames": true,
         "outFile": "../dist/index.js",
         "noImplicitAny": true,
         "target": "es5",
         "declaration": true,
-        "sourceMap": false,
+        "sourceMap": true,
         "moduleResolution": "node",
         "lib": [
             "es2015",

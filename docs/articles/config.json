@@ -1,0 +1,54 @@
+{
+    "name": "DataSense",
+    "wiki": [
+        {
+            "name": "Installation",
+            "name#zh": "安装",
+            "dir": "wiki/installation",
+            "dir#zh": "wiki/anzhuang",
+            "file": true,
+            "keywords": ["install", "prepare", "npm"],
+            "end": true
+        },
+        {
+            "name": "Task",
+            "name#zh": "任务",
+            "dir": "wiki/task",
+            "dir#zh": "wiki/renwu",
+            "file": true,
+            "end": true
+        },
+        {
+            "name": "Event",
+            "name#zh": "事件",
+            "dir": "wiki/event",
+            "dir#zh": "wiki/shijian",
+            "file": true,
+            "end": true
+        },
+        {
+            "name": "Value",
+            "name#zh": "对象",
+            "dir": "wiki/value",
+            "dir#zh": "wiki/duixiang",
+            "file": true,
+            "keywords": ["observable"],
+            "end": true
+        },
+        {
+            "name": "Props",
+            "name#zh": "属性集合",
+            "dir": "wiki/props",
+            "dir#zh": "wiki/shuxingjihe",
+            "file": true,
+            "keywords": ["observable"],
+            "end": true
+        }
+    ],
+    "redir": {
+        "install": "wiki/installation",
+        "installation": "wiki/installation",
+        "anzhuang": "wiki/installation",
+        "wiki/install": "wiki/installation"
+    }
+}

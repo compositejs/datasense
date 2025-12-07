@@ -5,7 +5,7 @@
   "main": "index.js",
   "types": "./index.d.ts",
   "scripts": {
-    "build": "tsc --project ./src/tsconfig.json && terser ./dist/index.js --compress -o ./dist/index.js",
+    "build": "tsc --project ./src/tsconfig.json && terser ./dist/index.js --source-map \"content='./dist/index.js.map'\" --compress -o ./dist/index.js",
     "test": "node ./test/index.js"
   },
   "repository": {
