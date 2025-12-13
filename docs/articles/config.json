@@ -4,8 +4,7 @@
         {
             "name": "Installation",
             "name#zh": "安装",
-            "dir": "wiki/installation",
-            "dir#zh": "wiki/anzhuang",
+            "dir": "installation",
             "file": true,
             "keywords": ["install", "prepare", "npm"],
             "end": true
@@ -13,42 +12,56 @@
         {
             "name": "Task",
             "name#zh": "任务",
-            "dir": "wiki/task",
-            "dir#zh": "wiki/renwu",
+            "dir": "task",
             "file": true,
+            "file#zh": "chs.md",
             "end": true
         },
         {
             "name": "Event",
             "name#zh": "事件",
-            "dir": "wiki/event",
-            "dir#zh": "wiki/shijian",
+            "dir": "event",
             "file": true,
+            "file#zh": "chs.md",
             "end": true
         },
         {
             "name": "Value",
             "name#zh": "对象",
-            "dir": "wiki/value",
-            "dir#zh": "wiki/duixiang",
+            "dir": "value",
             "file": true,
+            "file#zh": "chs.md",
             "keywords": ["observable"],
             "end": true
         },
         {
             "name": "Props",
             "name#zh": "属性集合",
-            "dir": "wiki/props",
-            "dir#zh": "wiki/shuxingjihe",
+            "dir": "props",
             "file": true,
+            "file#zh": "chs.md",
             "keywords": ["observable"],
             "end": true
         }
     ],
+    "$defs": {
+        "contributors": [
+            { "name": "Kingcean Tuan", "url": "https://kingcean.org" }
+        ],
+        "keywords": [
+            { "name": "Installation", "name#zh": "安装", "value": "install" },
+            { "name": "Prepare", "name#zh": "准备", "value": "prepare" },
+            { "name": "NPM", "value": "npm" },
+            { "name": "Observable", "value": "observable" }
+        ]
+    },
     "redir": {
-        "install": "wiki/installation",
-        "installation": "wiki/installation",
-        "anzhuang": "wiki/installation",
-        "wiki/install": "wiki/installation"
+        "install": "installation",
+        "anzhuang": "installation",
+        "setup": "installation",
+        "renwu": "task",
+        "shijian": "event",
+        "duixiang": "value",
+        "shuxingjihe": "props"
     }
 }
