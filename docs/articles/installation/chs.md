@@ -11,9 +11,9 @@ npm i datasense
 然后引入需要使用的功能。如下示例。
 
 ```typescript
-import { PropsController } from 'datasense';
+import { createProps } from 'datasense';
 
-let props = new PropsController();
+let props = createProps();
 props.setProp("name", "Muse");
 console.info(`The name is ${props.getProp("name")}.`);
 ```
@@ -36,9 +36,9 @@ npm i datasense
 然后引入模块。如下示例。
 
 ```typescript
-const { PropsController } = require('datasense');
+const { createProps } = require('datasense');
 
-let props = new PropsController();
+let props = createProps();
 props.setProp("name", "Muse");
 console.info(`The name is ${props.getProp("name")}.`);
 ```
@@ -50,12 +50,12 @@ console.info(`The name is ${props.getProp("name")}.`);
 - `https://cdn.jsdelivr.net/npm/datasense/dist/index.js`
 - `https://unpkg.com/datasense/dist/index.js`
 
-然后，可以通过`DataSense`命名空间来进行访问。如下示例。
+然后，可以通过 `DataSense` 命名空间来进行访问。如下示例。
 
 ```typescript
-const { PropsController } = DataSense;
+const { createProps } = DataSense;
 
-let props = new PropsController();
+let props = createProps();
 props.setProp("name", "Muse");
 console.info(`The name is ${props.getProp("name")}.`);
 ```

@@ -9,9 +9,9 @@ npm i datasense
 Then you can import the ones you needed by patching. Following is a sample.
 
 ```typescript
-import { PropsController } from 'datasense';
+import { createProps } from 'datasense';
 
-let props = new PropsController();
+let props = createProps();
 props.setProp("name", "Muse");
 console.info(`The name is ${props.getProp("name")}.`);
 ```
@@ -31,9 +31,9 @@ npm i datasense
 And you can require the library and patch what you needed. Following is a sample.
 
 ```typescript
-const { PropsController } = require('datasense');
+const { createProps } = require('datasense');
 
-let props = new PropsController();
+let props = createProps();
 props.setProp("name", "Muse");
 console.info(`The name is ${props.getProp("name")}.`);
 ```
@@ -48,9 +48,9 @@ You can download the __one of__ following JavaScript bundle file and insert it i
 Then you can use the global namespace `DataSense`. Following is a sample.
 
 ```typescript
-const { PropsController } = DataSense;
+const { createProps } = DataSense;
 
-let props = new PropsController();
+let props = createProps();
 props.setProp("name", "Muse");
 console.info(`The name is ${props.getProp("name")}.`);
 ```

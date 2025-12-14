@@ -5,14 +5,22 @@
 ## 引用和创建实例
 
 ```typescript
-import { PropsController } from 'datasense';
+import { createProps } from 'datasense';
 ```
 
-只需使用关键词`new`即可创建其实例。
+调用该函数即可创建其实例。
 
 ``` typescript
-// Create an instance.
-let props = new PropsController();
+// 创建一个具有属性变动监听的统一数据管理实例。
+const props = createProps();
+```
+
+该函数也可接受一个对象，为初始内容。
+
+```typescript
+const props = createProps({
+    name: "Test"
+});
 ```
 
 ## 访问属性

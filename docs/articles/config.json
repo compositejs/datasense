@@ -1,4 +1,5 @@
 {
+    "$schema": "https://cdn.jsdelivr.net/npm/hje@2.4.0/dist/mdblogs.schema.json",
     "name": "DataSense",
     "wiki": [
         {
@@ -6,8 +7,14 @@
             "name#zh": "安装",
             "dir": "installation",
             "file": true,
+            "file#zh": "chs.md",
             "keywords": ["install", "prepare", "npm"],
             "end": true
+        },
+        {
+            "disable": "label",
+            "name": "Functionality",
+            "name#zh": "功能"
         },
         {
             "name": "Task",
@@ -44,6 +51,15 @@
             "end": true
         }
     ],
+    "redir": {
+        "install": "installation",
+        "anzhuang": "installation",
+        "setup": "installation",
+        "renwu": "task",
+        "shijian": "event",
+        "duixiang": "value",
+        "shuxingjihe": "props"
+    },
     "$defs": {
         "contributors": [
             { "name": "Kingcean Tuan", "url": "https://kingcean.org" }
@@ -54,14 +70,5 @@
             { "name": "NPM", "value": "npm" },
             { "name": "Observable", "value": "observable" }
         ]
-    },
-    "redir": {
-        "install": "installation",
-        "anzhuang": "installation",
-        "setup": "installation",
-        "renwu": "task",
-        "shijian": "event",
-        "duixiang": "value",
-        "shuxingjihe": "props"
     }
 }

@@ -8,9 +8,19 @@ You can manage a set of value controller/observable instance by props controller
 import { createProps } from 'datasense';
 ```
 
+You can create an instance by the function.
+
 ``` typescript
 // Create an instance to access props and listen changed events.
-let props = new createProps();
+const props = createProps();
+```
+
+You can also pass an intializes properties.
+
+``` typescript
+const props = createProps({
+    name: "Test"
+});
 ```
 
 ## Access

@@ -22,14 +22,14 @@ Controller and client is derived from observable but with setter ability. Client
 ## Usage and initialize an instance
 
 ```typescript
-import { ValueController } from 'datasense';
+import { createValue } from 'datasense';
 ```
 
-You can create an instance by using `new` keyword.
+You can create an instance by the function.
 
 ``` typescript
 // Create a value controller.
-let value = new ValueController<string>();
+const value = createValue<string>();
 ```
 
 ## Access
