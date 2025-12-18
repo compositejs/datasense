@@ -1,6 +1,8 @@
 {
     "$schema": "https://cdn.jsdelivr.net/npm/hje@2.4.2/dist/mdblogs.schema.json",
     "name": "DataSense",
+    "description": "provides lots of powerful low-level APIs for the management of observable, events and tasks. You can build your business logic apps or technical libraries based on this, including one/two-way-bindings, observing, subscribe management and time sequence controlling.",
+    "description#zh": "提供许多底层数据和数据流相关的访问控制能力，包括双向绑定、事件与订阅管理、时序控制、通知，以及对这些信息的基础层级读写管控。",
     "wiki": [
         {
             "name": "Installation",
