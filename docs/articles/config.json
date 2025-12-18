@@ -1,5 +1,5 @@
 {
-    "$schema": "https://cdn.jsdelivr.net/npm/hje@2.4.0/dist/mdblogs.schema.json",
+    "$schema": "https://cdn.jsdelivr.net/npm/hje@2.4.2/dist/mdblogs.schema.json",
     "name": "DataSense",
     "wiki": [
         {
@@ -19,36 +19,56 @@
         {
             "name": "Task",
             "name#zh": "任务",
+            "intro": "A way to control how process a given handler including debounce, throttle, multiple hits, etc.",
+            "intro#zh": "防抖、节流、次数控制，以及更高级的多轮动作执行筛选响应设定。",
             "dir": "task",
             "file": true,
             "file#zh": "chs.md",
-            "end": true
+            "end": true,
+            "options": {
+                "kind": ["featured"]
+            }
         },
         {
             "name": "Event",
             "name#zh": "事件",
+            "intro": "A place to add event listeners and raise events with additional information and utilities supports, such as the one the tasks provided.",
+            "intro#zh": "统一管理事件，支持触发时机管理、分层管理和附加信息支持。",
             "dir": "event",
             "file": true,
             "file#zh": "chs.md",
-            "end": true
+            "end": true,
+            "options": {
+                "kind": ["featured"]
+            }
         },
         {
             "name": "Value",
             "name#zh": "对象",
+            "intro": "The controller and observable for a variable so that you can access it and subscribe its changing.",
+            "intro#zh": "一个用于存储单一数据的容器，可监听其变更情况。",
             "dir": "value",
             "file": true,
             "file#zh": "chs.md",
             "keywords": ["observable"],
-            "end": true
+            "end": true,
+            "options": {
+                "kind": ["featured"]
+            }
         },
         {
             "name": "Props",
             "name#zh": "属性集合",
+            "intro": "The controller and observable for a set of variables with keys. They are like the property of an object. You can access and observe them.",
+            "intro#zh": "提供多项数据的存储、读写和监听能力，支持定义更新策略，也支持分层管理。",
             "dir": "props",
             "file": true,
             "file#zh": "chs.md",
             "keywords": ["observable"],
-            "end": true
+            "end": true,
+            "options": {
+                "kind": ["featured"]
+            }
         }
     ],
     "redir": {
