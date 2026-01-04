@@ -758,6 +758,13 @@ declare namespace DataSense {
     function createEvent(): EventController;
 }
 declare namespace DataSense {
+    /**
+     * Gets the module name.
+     * @returns The name of module.
+     */
+    function name(): string;
+}
+declare namespace DataSense {
     type PropsObservableAccessorContract = PropsAccessorContract & RegisterPropRequestContract<SimplePropsAccessorContract, SimpleValueAccessorContract<any>>;
     interface PropsFurtherEventsContract {
         propBroadcastReceived: EventObservable;
@@ -1253,6 +1260,83 @@ declare namespace DataSense {
     function createProps(initObj?: {
         [property: string]: any;
     }): PropsController;
+}
+declare namespace DataSense {
+    /**
+     * The record info of Server-Sent Event item.
+     */
+    class ServerSentEventItem {
+        private source;
+        private dataParsedInJson;
+        /**
+         * Initializes a new instance of the ServerSentEventItem class.
+         * @param source
+         */
+        constructor(source: string);
+        /**
+         * Gets the event name.
+         */
+        get event(): string;
+        /**
+         * Gets the data in string.
+         */
+        get data(): string;
+        /**
+         * Gets the event identifier.
+         */
+        get id(): string;
+        /**
+         * Gets the comment.
+         */
+        get comment(): string;
+        /**
+         * Gets the retry in millisecond.
+         */
+        get retry(): number;
+        /**
+         * Gets the data in JSON.
+         * @returns The data object parsed by JSON.
+         */
+        dataJson<T = Record<string, unknown>>(): T;
+        /**
+         * Gets a specific field.
+         * @param key The field key.
+         * @returns The raw value of the field.
+         */
+        get(key: string): string;
+    }
+    /**
+     * The client to fetch Server-Sent Events.
+     */
+    class ServerSentEventClient extends EventObservable {
+        private internal;
+        constructor(input: RequestInfo | URL, init?: RequestInit);
+        /**
+         * Occurs on connection is open.
+         */
+        onopen: (() => any) | null | undefined;
+        /**
+         * Occurs on message is received.
+         */
+        onreceive: ((item: ServerSentEventItem) => any) | null | undefined;
+        /**
+         * Occurs on fetch failed.
+         */
+        onerror: (() => any) | null | undefined;
+        /**
+         * Gets the URL.
+         */
+        get url(): string;
+        /**
+         * Gets the state.
+         */
+        get readyState(): number;
+        /**
+         * Waits and gets the final result.
+         * @returns The Server-Sent Event items array.
+         */
+        wait(): Promise<ServerSentEventItem[]>;
+    }
 }
 declare namespace DataSense {
     type HitTaskHandlerContract = (arg: any, ev: {
