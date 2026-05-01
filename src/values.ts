@@ -375,10 +375,12 @@ export class ValueObservable<T> implements DisposableArrayContract {
  * Data property accessing and observing client.
  */
 export class ValueClient<T> extends ValueObservable<T> {
-    private readonly _setter: (value: T, message?: SetterOptionsContract | string) => ChangedInfo<T>;
-    private readonly _forceUpdate: (message?: FireInfoContract | string) => void;
-    private readonly _sendNotify: (data: any, message?: FireInfoContract | string) => void;
-    private readonly _registerRequestHandler: (type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) => boolean;
+    private readonly __innerStore: {
+        setter?: (value: T, message?: SetterOptionsContract | string) => ChangedInfo<T>;
+        forceUpdate?: (message?: FireInfoContract | string) => void;
+        sendNotify?: (data: any, message?: FireInfoContract | string) => void;
+        registerRequestHandler?: (type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) => boolean;
+    } = {};
 
     /**
      * Initializes a new instance of the ValueClient class.
@@ -399,10 +401,10 @@ export class ValueClient<T> extends ValueObservable<T> {
         if (additionalEvents) (h as any).additionalEvents = additionalEvents;
         super(h);
 
-        if (typeof setter === "function") this._setter = setter;
-        if (typeof sendNotify === "function") this._sendNotify = sendNotify;
-        if (typeof registerRequestHandler === "function") this._registerRequestHandler = registerRequestHandler;
-        if (typeof forceUpdate === "function") this._forceUpdate = forceUpdate;
+        if (typeof setter === "function") this.__innerStore.setter = setter;
+        if (typeof sendNotify === "function") this.__innerStore.sendNotify = sendNotify;
+        if (typeof registerRequestHandler === "function") this.__innerStore.registerRequestHandler = registerRequestHandler;
+        if (typeof forceUpdate === "function") this.__innerStore.forceUpdate = forceUpdate;
     }
 
     /**
@@ -411,9 +413,9 @@ export class ValueClient<T> extends ValueObservable<T> {
      * @param message  A message for the setting event.
      */
     public set(value: T, message?: SetterOptionsContract | string): boolean {
-        if (typeof this._setter !== "function") return false;
-        let info = this._setter(value, message)
-        return info ? info.success : false;
+        if (typeof this.__innerStore.setter !== "function") return false;
+        let info = this.__innerStore.setter(value, message)
+        return info?.success || false;
     }
 
     /**
@@ -422,8 +424,8 @@ export class ValueClient<T> extends ValueObservable<T> {
      * @param message  A message for the setting event.
      */
     public setForDetails(value: T, message?: FireInfoContract | string): ChangedInfo<T> {
-        if (typeof this._setter !== "function") return ChangedInfo.fail(null, undefined, value, "not implemented");
-        return this._setter(value, message);
+        if (typeof this.__innerStore.setter !== "function") return ChangedInfo.fail(null as unknown as string, undefined as T, value, "not implemented");
+        return this.__innerStore.setter(value, message);
     }
 
     /**
@@ -455,8 +457,8 @@ export class ValueClient<T> extends ValueObservable<T> {
      * @param message  A message for the setting event.
      */
     public forceUpdate(message?: FireInfoContract | string) {
-        if (typeof this._forceUpdate !== "function") return;
-        this._forceUpdate(message);
+        if (typeof this.__innerStore.forceUpdate !== "function") return;
+        this.__innerStore.forceUpdate(message);
     }
 
     /**
@@ -465,7 +467,8 @@ export class ValueClient<T> extends ValueObservable<T> {
      * @param message  A message for the setting event.
      */
     public sendNotify(data: any, message?: FireInfoContract | string) {
-        this._sendNotify(data, message);
+        if (typeof this.__innerStore.sendNotify !== "function") return;
+        this.__innerStore.sendNotify(data, message);
     }
 
     /**
@@ -474,8 +477,8 @@ export class ValueClient<T> extends ValueObservable<T> {
      * @param h  The handler to respond the request message.
      */
     public registerRequestHandler(type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) {
-        if (typeof this._registerRequestHandler !== "function") return false;
-        return this._registerRequestHandler(type, h);
+        if (typeof this.__innerStore.registerRequestHandler !== "function") return false;
+        return this.__innerStore.registerRequestHandler(type, h);
     }
 }
 
@@ -483,35 +486,37 @@ export class ValueClient<T> extends ValueObservable<T> {
  * Data observable and controller.
  */
 export class ValueController<T> extends ValueObservable<T> {
-    private _accessor: ValueObservableAccessorContract<T>;
-    private _observing: ChangeFlowRegisteredContract;
+    private __innerStore: {
+        accessor: ValueObservableAccessorContract<T>;
+        observing?: ChangeFlowRegisteredContract | undefined;
+    };
 
     /**
      * Gets the formatter/convertor.
      */
     public get formatter() {
-        return this._accessor.getFormatter();
+        return this.__innerStore.accessor.getFormatter();
     }
 
     /**
      * Sets the formatter/convertor.
      */
     public set formatter(h) {
-        this._accessor.setFormatter(h);
+        this.__innerStore.accessor.setFormatter(h);
     }
 
     /**
      * Gets the validator.
      */
     public get validator() {
-        return this._accessor.getValidator();
+        return this.__innerStore.accessor.getValidator();
     }
 
     /**
      * Sets the validator.
      */
     public set validator(h) {
-        this._accessor.setValidator(h);
+        this.__innerStore.accessor.setValidator(h);
     }
 
     /**
@@ -520,7 +525,9 @@ export class ValueController<T> extends ValueObservable<T> {
     constructor() {
         let a: ValueObservableAccessorContract<T>;
         super(acc => a = acc);
-        this._accessor = a;
+        this.__innerStore = {
+            accessor: a!
+        };
     }
 
     /**
@@ -529,8 +536,8 @@ export class ValueController<T> extends ValueObservable<T> {
      * @param message  A message for the setting event.
      */
     public set(value: T, message?: SetterOptionsContract | string): boolean {
-        let info = this._accessor.set(value, message);
-        return info ? info.success : false;
+        let info = this.__innerStore.accessor.set(value, message);
+        return info?.success || false;
     }
 
     /**
@@ -539,7 +546,7 @@ export class ValueController<T> extends ValueObservable<T> {
      * @param message  A message for the setting event.
      */
     public setForDetails(value: T, message?: SetterOptionsContract | string): ChangedInfo<T> {
-        return this._accessor.set(value, message);
+        return this.__innerStore.accessor.set(value, message) || ChangedInfo.fail(null, undefined as T, value, "Set failed.");
     }
 
     /**
@@ -571,7 +578,7 @@ export class ValueController<T> extends ValueObservable<T> {
      * @param message  A message for the setting event.
      */
     public forceUpdate(message?: FireInfoContract | string) {
-        this._accessor.forceUpdate(message);
+        this.__innerStore.accessor.forceUpdate(message);
     }
 
     /**
@@ -580,7 +587,7 @@ export class ValueController<T> extends ValueObservable<T> {
      * @param h  The handler to respond the request message.
      */
     public registerRequestHandler(type: string, h: (owner: SimpleValueAccessorContract<T>, value: any) => void) {
-        return this._accessor.registerRequestHandler(type, h);
+        return this.__innerStore.accessor.registerRequestHandler(type, h);
     }
 
     /**
@@ -593,18 +600,18 @@ export class ValueController<T> extends ValueObservable<T> {
             sync() {},
             dispose() {}
         };
-        this._observing = value.registerChangeFlow(this._accessor.customizedSet);
-        if (!notSyncNow) this._accessor.customizedSet(value.get(), message).resolve();
-        return this._observing;
+        this.__innerStore.observing = value.registerChangeFlow(this.__innerStore.accessor.customizedSet);
+        if (!notSyncNow) this.__innerStore.accessor.customizedSet(value.get(), message).resolve();
+        return this.__innerStore.observing;
     }
 
     /**
      * Stops observing.
      */
     public stopObserving() {
-        let disposeObserving = this._observing;
+        let disposeObserving = this.__innerStore.observing;
         if (!disposeObserving) return;
-        delete this._observing;
+        delete this.__innerStore.observing;
         if (typeof disposeObserving.dispose === "function") disposeObserving.dispose();
     }
 
@@ -613,7 +620,7 @@ export class ValueController<T> extends ValueObservable<T> {
      * @param message  A message for the setting event.
      */
     public syncFromObserved(message?: FireInfoContract | string) {
-        let disposeObserving = this._observing;
+        let disposeObserving = this.__innerStore.observing;
         if (!disposeObserving || typeof disposeObserving.sync !== "function") return false;
         disposeObserving.sync(message);
         return true;
@@ -623,7 +630,7 @@ export class ValueController<T> extends ValueObservable<T> {
      * Gets a value indicating whether it is observing another observable value.
      */
     public isObserving() {
-        return !!this._observing;
+        return !!this.__innerStore.observing;
     }
 
     /**
@@ -650,7 +657,7 @@ export class ValueController<T> extends ValueObservable<T> {
             });
         }, (value, message?) => {
             return this.setForDetails(value, message);
-        }, this._accessor.sendNotify, this._accessor.registerRequestHandler, {
+        }, this.__innerStore.accessor.sendNotify, this.__innerStore.accessor.registerRequestHandler, {
             broadcastReceived: this.broadcastReceived.createObservable(),
             notifyReceived: this.notifyReceived.createObservable(),
             sendRequest,
@@ -658,7 +665,7 @@ export class ValueController<T> extends ValueObservable<T> {
         }, (message?) => {
             this.forceUpdate(message);
         });
-        client.pushDisposable(token);
+        client.pushDisposable(token!);
         this.pushDisposable(client);
         return client;
     }
@@ -669,7 +676,7 @@ export class ValueController<T> extends ValueObservable<T> {
      * @param message  The additional information which will pass to the event listener handler.
      */
     public sendNotify(data: any, message?: FireInfoContract | string) {
-        this._accessor.sendNotify(data, message);
+        this.__innerStore.accessor.sendNotify(data, message);
     }
 }
 
@@ -680,7 +687,7 @@ export class ValueController<T> extends ValueObservable<T> {
  */
 export function createValue<T>(value?: T) {
     let p = new ValueController<T>();
-    if (arguments.length > 0) p.set(value);
+    if (arguments.length > 0) p.set(value as T);
     return p;
 }
 

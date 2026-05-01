@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "strict": false,
+        "strict": true,
         "forceConsistentCasingInFileNames": true,
         "outFile": "../dist/index.js",
         "noImplicitAny": true,

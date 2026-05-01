@@ -1,6 +1,6 @@
 {
   "name": "datasense",
-  "version": "3.2.0",
+  "version": "4.0.0",
   "description": "A set of powerful utilities and classes for accessing and observing data.",
   "main": "index.js",
   "types": "./index.d.ts",
@@ -28,6 +28,6 @@
   "homepage": "https://datasense.js.org/",
   "devDependencies": {
     "typescript": "^5.9.2",
-    "terser": "^5.44.0"
+    "terser": "^5.46.1"
   }
 }

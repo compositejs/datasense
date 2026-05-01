@@ -24,8 +24,8 @@ testCase.add("Events", () => {
     });
 
     // We can add an event listener and get details of current raising information and actions.
-    let eventArgB: string;
-    let eventArgB2: DataSense.EventListenerControllerContract;
+    let eventArgB!: string;
+    let eventArgB2!: DataSense.EventListenerControllerContract;
     events.on<string>("b", (ev, listenerController) => {
         eventArgB = ev;
 

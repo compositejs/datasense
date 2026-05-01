@@ -17,7 +17,7 @@ testCase.add("Access", () => {
     assert.equals(value.get(), "abc");
 
     // Test for null.
-    value.set(null);
+    value.set(null as any);
     assert.equals(value.get(), null);
 
     // Add an event listener for changing.
@@ -184,13 +184,13 @@ testCase.add("Format", () => {
         onChangingVariables.valueRequest = ev.valueRequest;
 
         // We can set a callback here when the value is set succeeded.
-        ev.observable.onResolved(newValue => {
+        ev.onResolved(newValue => {
             onChangingVariables.success = true;
             onChangingVariables.value = newValue;
         });
 
         // We can also set a callback here when the value is set failed.
-        ev.observable.onRejected(ex => {
+        ev.onResolved(ex => {
             onChangingVariables.success = false;
         });
     });

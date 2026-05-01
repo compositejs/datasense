@@ -216,11 +216,11 @@ export class HitTask {
  * @param h  The handler.
  * @param span  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
  */
-export function delay(h: Function, span: number | boolean): DisposableContract {
+export function delay(h: Function, span?: number | boolean | null): DisposableContract {
     let procToken: any;
     if (span == null || span === false)
         h();
-    else if (span === true)
+    else if (span === true || span === undefined)
         procToken = setTimeout(() => {
             procToken = null;
             h();
@@ -316,20 +316,20 @@ export function multiHit(h: HitTaskHandlerContract | HitTaskHandlerContract[], m
  */
 export function schedule(h: (info: ScheduleTaskInfoContract) => void, span: number): ScheduleTaskResultContract {
     let token: any;
-    let token2: DisposableContract;
+    let token2: DisposableContract | null;
     let startDate: Date;
     let processDate: Date;
     let stopDate: Date;
     let latest: Date;
     let isInit = true;
-    let clearToken = () => {
+    const clearToken = () => {
         if (token2) token2.dispose();
         token2 = null;
         if (!token) return;
         clearInterval(token);
         token = null;
     };
-    let process = (source: ScheduleTaskSourceContract) => {
+    const process = (source: ScheduleTaskSourceContract) => {
         processDate = new Date();
         h({
             startDate,
@@ -341,7 +341,7 @@ export function schedule(h: (info: ScheduleTaskInfoContract) => void, span: numb
         });
         latest = new Date();
     };
-    let startProc = (delay: number | boolean, source: ScheduleTaskSourceContract) => {
+    const startProc = (delay: number | boolean, source: ScheduleTaskSourceContract) => {
         isInit = false;
         clearToken();
         token2 = DataSense.delay(() => {
@@ -352,11 +352,12 @@ export function schedule(h: (info: ScheduleTaskInfoContract) => void, span: numb
             }, span);
         }, delay);
     };
-    let task = {
+    const task = {
         start(isPlan?: number | boolean) {
             let delay: number | boolean = false;
             let source: ScheduleTaskSourceContract = isPlan ? "plan" : "start";
             if (startDate) source = ("re" + source) as any;
+            else startDate = new Date();
             if (typeof isPlan === "number") delay = isPlan;
             else if (isPlan === true) delay = span;
             startProc(delay, source);
@@ -367,7 +368,14 @@ export function schedule(h: (info: ScheduleTaskInfoContract) => void, span: numb
         resume(isPlan?: number | boolean) {
             if (token || token2) return;
             if (isInit || !stopDate || !startDate) {
-                startProc(isPlan, startDate ? "restart" : "resume");
+                let delay2 = !isPlan ? false : isPlan;
+                if (startDate) {
+                    startProc(delay2, "restart");
+                } else {
+                    startDate = new Date();
+                    startProc(delay2, "resume");
+                }
+
                 return;
             }
 

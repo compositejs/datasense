@@ -154,7 +154,7 @@ export function setSubscribe<T>(setter: (value: T, message?: FireInfoContract | 
         let result = setter(newValue, message);
         if (!needCallback) return;
         let fireObj = typeof message === "string" ? { message } : (message || {});
-        callbackfn.call(thisArg, result, fireObj)
+        callbackfn!.call(thisArg, result, fireObj)
     });
 }
 
@@ -184,7 +184,7 @@ export function propsAccessor(): {
     let hasProp = (key: string) => {
         return (store as Object).hasOwnProperty(key) && (store[key] as Object).hasOwnProperty("value");
     };
-    let getProp = (key: string, ensure: boolean, ignoreExpiration?: boolean): PropInfoContract => {
+    let getProp = (key: string, ensure: boolean, ignoreExpiration?: boolean): PropInfoContract | undefined => {
         if (!key || typeof key !== "string") return undefined;
         let obj = store[key];
         if (!obj) {
@@ -201,7 +201,7 @@ export function propsAccessor(): {
                 if (isExpired(cacheOptions, obj.updated)) {
                     delete obj.value;
                 } else if (typeof cacheOptions.handler === "function") {
-                    let expiration: Date;
+                    let expiration: Date | undefined;
                     if (cacheOptions.expiresIn instanceof Date) expiration = cacheOptions.expiresIn;
                     else if (typeof cacheOptions.expiresIn === "number") expiration = new Date(new Date().getTime() + cacheOptions.expiresIn);
                     else expiration = undefined;
@@ -222,17 +222,17 @@ export function propsAccessor(): {
     };
     let formatter: ((key: string, value: any) => any);
     let validator: ((key: string, value: any) => boolean);
-    let actionRequests: any = {};
+    const actionRequests: any = {};
     let undefinedProps: string[] = [];
 
-    let notifyUndefinedProp = (prop: PropInfoContract, key: string) => {
+    const notifyUndefinedProp = (prop: PropInfoContract, key: string) => {
         if ((prop as Object).hasOwnProperty("value") || undefinedProps.indexOf(key) >= 0) return;
         undefinedProps.push(key);
         if (undefinedProps.length > 50) undefinedProps = undefinedProps.slice(1);
         eventManager.fire("prop-empty", { key });
     }
     
-    let setProp = (key: string, value: any, message: SetterOptionsContract | string, init?: boolean, getResp?: boolean): ChangedInfo<any> => {
+    const setProp = (key: string, value: any, message?: SetterOptionsContract | string, init?: boolean, getResp?: boolean): ChangedInfo<any> | undefined => {
         let prop = getProp(key, true);
         if (!prop) return getResp ? new ChangedInfo(null, "invalid", false, undefined, undefined, value, "key is not valid") : undefined;
         if (init && (prop as Object).hasOwnProperty("value")) return getResp ? ChangedInfo.fail(key, prop.value, value, "ignore") : undefined;
@@ -280,11 +280,11 @@ export function propsAccessor(): {
             return getResp ? ChangedInfo.fail(key, prop.value, value, "expired") : undefined;
         }
 
-        prop.updating = null;
+        prop.updating = undefined;
         prop.updated = new Date();
         if (message && typeof message !== "string") {
-            if (typeof message.cacheOptions === "boolean" || message.cacheOptions === null) {
-                if (!message.cacheOptions) prop.caching = null;
+            if (typeof message.cacheOptions === "boolean" || message.cacheOptions === null || message.cacheOptions === undefined) {
+                if (!message.cacheOptions) prop.caching = undefined;
             }
 
             if (typeof message.cacheOptions !== "number" && typeof message.cacheOptions !== "string")
@@ -293,8 +293,8 @@ export function propsAccessor(): {
 
         prop.value = value;
         onceC.resolve(value);
-        if (oldValue === value) return ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
-        let info = ChangedInfo.success(key, value, oldValue, !propExist ? "add" : null, valueRequested);
+        if (oldValue === value) return ChangedInfo.success(key, value, oldValue, !propExist ? "add" : undefined, valueRequested);
+        let info = ChangedInfo.success(key, value, oldValue, !propExist ? "add" : undefined, valueRequested);
         eventManager.fire("ed-" + key, info, message);
         eventManager.fire("prop-changed", info, message);
         flowTokens.forEach(item => {
@@ -303,7 +303,7 @@ export function propsAccessor(): {
         });
         return info;
     };
-    let removeProp = (keys: string | string[], message: FireInfoContract | string) => {
+    const removeProp = (keys: string | string[], message?: FireInfoContract | string) => {
         if (!keys) return [];
         if (typeof keys === "string") keys = [keys];
         if (!(keys instanceof Array)) return [];
@@ -332,7 +332,7 @@ export function propsAccessor(): {
                 return ChangedInfo.fail(key, prop.value, undefined, "expired");
             }
 
-            prop.updating = null;
+            prop.updating = undefined;
             prop.updated = new Date();
             delete prop.caching;
             delete prop.value;
@@ -356,6 +356,7 @@ export function propsAccessor(): {
         },
         getProp(key, options) {
             let prop = getProp(key, false, options?.ignoreExpires);
+            if (!prop) return undefined;
             notifyUndefinedProp(prop, key);
             if (options && typeof options.callback === "function") {
                 options.callback(convertToDetails(key, prop));
@@ -376,12 +377,23 @@ export function propsAccessor(): {
         },
         getPropDetails<T>(key: string) {
             let prop = getProp(key, false);
+            if (!prop) return {
+                hasValue: false,
+                key: key,
+                value: undefined as T,
+                store: {},
+                cacheOptions: undefined,
+                updateTime: new Date(),
+                requestHandlerTypes: [],
+                flowCount: 0,
+            };
             notifyUndefinedProp(prop, key);
             return convertToDetails<T>(key, prop);
         },
         setProp(key, value, message?) {
-            let info = setProp(key, value, message, false, true);
-            if (info) eventManager.fire("batch-changed", { changed: info }, message);
+            const info = setProp(key, value, message, false, true);
+            if (!info) return ChangedInfo.fail(key, undefined, value, "Set failed.");
+            eventManager.fire("batch-changed", { changed: info }, message);
             return info;
         },
         customizedSetProp(key, valueRequested, message?) {
@@ -400,7 +412,7 @@ export function propsAccessor(): {
                 prop.updating.cancel("expired");
             }
 
-            let flowTokens: ValueResolveContract<any>[];
+            let flowTokens: (ValueResolveContract<any> | undefined)[];
             let done = false;
             let propExist = hasProp(key);
             let oldValue = prop.value;
@@ -425,14 +437,14 @@ export function propsAccessor(): {
                     if (done) return;
                     if (setToken !== prop.updating) return;
                     if (arguments.length === 0) finalValue = valueRequested;
-                    prop.updating = null;
+                    prop.updating = undefined;
                     onceC.resolve(finalValue);
-                    if (oldValue === finalValue) return ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
+                    if (oldValue === finalValue) return ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : undefined, valueRequested);
                     prop.updated = new Date();
                     delete prop.caching;
                     if (message && typeof message !== "string" && message.cacheOptions) prop.caching = message.cacheOptions;
                     prop.value = finalValue;
-                    let info = ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : null, valueRequested);
+                    let info = ChangedInfo.success(key, finalValue, oldValue, !propExist ? "add" : undefined, valueRequested);
                     eventManager.fire("ed-" + key, info, message);
                     eventManager.fire("prop-changed", info, message);
                     flowTokens.forEach(item => {
@@ -444,7 +456,7 @@ export function propsAccessor(): {
                 reject(err: any) {
                     if (done) return;
                     if (setToken !== prop.updating) return;
-                    prop.updating = null;
+                    prop.updating = undefined;
                     obj.isAborted = true;
                     let errorInfo = ChangedInfo.fail(key, oldValue, valueRequested, "invalid");
                     onceC.reject("invalid");
@@ -458,7 +470,7 @@ export function propsAccessor(): {
                 remove() {
                     if (done) return;
                     if (setToken !== prop.updating) return;
-                    prop.updating = null;
+                    prop.updating = undefined;
                     if (!propExist) return;
                     onceC.resolve(undefined);
                     if (oldValue === undefined) return ChangedInfo.success(key, undefined, oldValue, "remove", valueRequested);
@@ -484,15 +496,15 @@ export function propsAccessor(): {
         },
         batchProp(changeSet, message?) {
             if (!changeSet) return;
-            let changed: ChangedInfo<any>[] = [];
-            let pushChanged = (...actionResult: ChangedInfo<any>[]) => {
+            const changed: ChangedInfo<any>[] = [];
+            const pushChanged = (...actionResult: ChangedInfo<any>[]) => {
                 ChangedInfo.push(changed, ...actionResult);
             };
-            var batchPropChanged = (changeSet: any) => {
+            const batchPropChanged = (changeSet: any) => {
                 if (changeSet) for (let key in changeSet) {
                     if (!key || typeof key !== "string" || !(changeSet as Object).hasOwnProperty(key)) continue;
-                    let actionResult = setProp(key, changeSet[key], message);
-                    pushChanged(actionResult);
+                    const actionResult = setProp(key, changeSet[key], message);
+                    if (actionResult) pushChanged(actionResult);
                 }
             };
             if (!(changeSet instanceof Array)) {
@@ -503,18 +515,24 @@ export function propsAccessor(): {
             changeSet.forEach(action => {
                 if (!action || !action.action) return;
                 switch (action.action) {
-                    case "delete":
+                    case "delete": {
                         pushChanged(...removeProp(action.key, message));
                         break;
-                    case "batch":
+                    }
+                    case "batch": {
                         batchPropChanged(action.value);
                         break;
-                    case "set":
-                        pushChanged(setProp(action.key, action.value, message));
+                    }
+                    case "set": {
+                        const setPropResult = setProp(action.key, action.value, message);
+                        if (setPropResult) pushChanged(setPropResult);
                         break;
-                    case "init":
-                        pushChanged(setProp(action.key, action.value, message, true));
+                    }
+                    case "init": {
+                        const setPropResult = setProp(action.key, action.value, message, true)
+                        if (setPropResult) pushChanged(setPropResult);
                         break;
+                    }
                 }
             });
 
@@ -547,10 +565,14 @@ export function propsAccessor(): {
             validator = h;
         },
         getPropStore(key, storePropKey) {
-            return getProp(key, true).store[storePropKey];
+            const propInfo = getProp(key, true);
+            if (!propInfo) return undefined;
+            return propInfo.store[storePropKey];
         },
         setPropStore(key, storePropKey, value) {
-            getProp(key, true).store[storePropKey] = value;
+            const propInfo = getProp(key, true);
+            if (!propInfo) return undefined;
+            propInfo.store[storePropKey] = value;
         },
         removePropStore(key, ...storePropKey) {
             let propInfo = getProp(key, false);
@@ -572,7 +594,8 @@ export function propsAccessor(): {
             eventManager.fire("notify", data, message);
         },
         registerPropRequestHandler(key, type, h) {
-            let prop = getProp(key, true).factory;
+            const prop = getProp(key, true)?.factory;
+            if (!prop) return false;
             if (!h) delete prop[type];
             else if (typeof h !== "function") return false;
             else prop[type] = h;
@@ -590,7 +613,7 @@ export function propsAccessor(): {
         pushFlows(key, ...flows) {
             let now = new Date();
             flows = flows.filter(item => typeof item === "function");
-            let flowArr = getProp(key, true).flows;
+            let flowArr = getProp(key, true)?.flows || [];
             let count = flowArr.push(...flows);
             return {
                 get registeredDate() {
@@ -615,12 +638,15 @@ export function propsAccessor(): {
         },
         clearFlows(key) {
             let prop = getProp(key, false);
+            if (!prop) return 0;
             let count = prop.flows.length;
             prop.flows = [];
             return count;
         },
         sendPropRequest(key, type, value, owner) {
-            let requestH = getProp(key, false).factory[type] as Function;
+            const propInfo = getProp(key, false);
+            if (!propInfo) return;
+            let requestH = propInfo.factory[type] as Function;
             if (typeof requestH !== "function") return;
             requestH(owner, value);
         },

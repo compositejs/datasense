@@ -167,6 +167,10 @@ declare namespace DataSense {
         key: string;
         value: T;
     }
+    interface OptionalKeyValueContract<T> {
+        key: string | null;
+        value: T;
+    }
     interface SubscriberContract<T> {
         subscribe(h: (value: T) => void): SubscriberResultContract;
     }
@@ -227,7 +231,7 @@ declare namespace DataSense {
     type OccurModelContract<T> = {
         h: (value: T) => void;
         thisArg: any;
-        delay: boolean | number;
+        delay: boolean | number | undefined;
     };
     type FireContract = (key: string, ev: any, message?: FireInfoContract | string) => void;
     type OnAnyContract = (h: EventHandlerContract<KeyValueContract<any>> | EventHandlerContract<KeyValueContract<any>>[], thisArg?: any, options?: EventOptionsContract) => AnyEventRegisterResultContract;
@@ -370,23 +374,23 @@ declare namespace DataSense {
         readonly addition: any;
         /**
          * Checks if the given temp store data is existed.
-         * @param propKey  The store data key.
+         * @param propKey The store data key.
          */
         hasStoreData(propKey: string): boolean;
         /**
          * Gets a specific temp store data.
-         * @param propKey  The store data key.
+         * @param propKey The store data key.
          */
         getStoreData(propKey: string): any;
         /**
          * Sets a specific temp store data.
-         * @param propKey  The store data key.
-         * @param propValue  The store data value.
+         * @param propKey The store data key.
+         * @param propValue The store data value.
          */
         setStoreData(propKey: string, propValue: any): void;
         /**
          * Removes the specific temp store data.
-         * @param propKey  The store data key.
+         * @param propKey The store data key.
          */
         removeStoreData(...propKey: string[]): number;
     }
@@ -409,8 +413,8 @@ declare namespace DataSense {
         readonly state: "success" | "failure" | "disposed";
         /**
          * Forces to fire an event.
-         * @param ev  The event argument.
-         * @param message  The additional event information or message.
+         * @param ev The event argument.
+         * @param message The additional event information or message.
          */
         fire(ev: T, message?: FireInfoContract | string): void;
     }
@@ -425,9 +429,9 @@ declare namespace DataSense {
         readonly registerDate: Date;
         /**
          * Forces to fire an event.
-         * @param key  The event key.
-         * @param ev  The event argument.
-         * @param message  The additional event information or message.
+         * @param key The event key.
+         * @param ev The event argument.
+         * @param message The additional event information or message.
          */
         fire(key: string, ev: any, message?: FireInfoContract | string): void;
     }
@@ -442,43 +446,43 @@ declare namespace DataSense {
         readonly hasKeyMap: boolean;
         /**
          * Initializes a new instance of the EventObservable class.
-         * @param firer  The handler to fire.
+         * @param firer The handler to fire.
          */
         constructor(firer: EventObservable | ((fire: FireContract, onAny: OnAnyContract) => void), mapKey?: string | ((key: string) => string));
         /**
          * Adds disposable objects so that they will be disposed when this instance is disposed.
-         * @param items  The objects to add.
+         * @param items The objects to add.
          */
         pushDisposable(...items: DisposableContract[]): number;
         /**
          * Removes the ones added here.
-         * @param items  The objects to remove.
+         * @param items The objects to remove.
          */
         removeDisposable(...items: DisposableContract[]): number;
         /**
          * Registers an event listener.
-         * @param key  The event key.
-         * @param h  The handler or handlers of the event listener.
+         * @param key The event key.
+         * @param h The handler or handlers of the event listener.
          * @param thisArg  this arg.
-         * @param options  The event listener options.
+         * @param options The event listener options.
          * @param disposableArray  An additional disposable array instance for push current event handler.
          */
         on<T>(key: string, h: EventHandlerContract<T> | EventHandlerContract<T>[], thisArg?: any, options?: EventOptionsContract, disposableArray?: DisposableArrayContract): EventRegisterResultContract<T>;
         /**
          * Registers an event listener that will be raised once at most.
-         * @param key  The event key.
-         * @param h  The handler or handlers of the event listener.
+         * @param key The event key.
+         * @param h The handler or handlers of the event listener.
          * @param thisArg  this arg.
          */
         once<T>(key: string, h: EventHandlerContract<any> | EventHandlerContract<any>[], thisArg?: any): EventRegisterResultContract<any>;
         /**
          * Clears all the specific event listeners
-         * @param key  The event key.
+         * @param key The event key.
          */
         clearOn(key: string): void;
         /**
          * Creates a single event observable.
-         * @param key  The event key.
+         * @param key The event key.
          */
         createSingleObservable<T>(key: string): SingleEventObservable<T>;
         subscribeSingle<T>(key: string, h: (newValue: T) => void, thisArg?: any, convertor?: (newValue: any) => T): SubscriberCompatibleResultContract;
@@ -488,7 +492,7 @@ declare namespace DataSense {
         createObservable(): EventObservable;
         /**
          * Creates an observable instance so that any event listeners and subscribers will be disposed automatically when that instance is disposed.
-         * @param mapKey  A string or a function to map keys.
+         * @param mapKey A string or a function to map keys.
          */
         createMappedObservable(mapKey: string | ((key: string) => string)): EventObservable;
         /**
@@ -514,45 +518,45 @@ declare namespace DataSense {
         private _eventObservable;
         /**
          * Initializes a new instance of the SingleEventObservable class.
-         * @param eventObservable  The event observable.
-         * @param key  The event key.
+         * @param eventObservable The event observable.
+         * @param key The event key.
          */
         constructor(eventObservable: EventObservable, key: string);
         /**
          * Adds disposable objects so that they will be disposed when this instance is disposed.
-         * @param items  The objects to add.
+         * @param items The objects to add.
          */
         pushDisposable(...items: DisposableContract[]): number;
         /**
          * Removes the ones added here.
-         * @param items  The objects to remove.
+         * @param items The objects to remove.
          */
         removeDisposable(...items: DisposableContract[]): number;
         /**
          * Adds event listener.
-         * @param h  The handler.
+         * @param h The handler.
          * @param thisArg  this argument for calling handler.
-         * @param options  The options to control how the handler processes.
-         * @param disposabelArray  The disposable array used to push the listener result.
+         * @param options The options to control how the handler processes.
+         * @param disposabelArray The disposable array used to push the listener result.
          */
         on(h: EventHandlerContract<T> | EventHandlerContract<T>[], thisArg?: any, options?: EventOptionsContract, disposableArray?: DisposableArrayContract): EventRegisterResultContract<T>;
         /**
          * Adds event listener for one time raised.
-         * @param h  The handler.
+         * @param h The handler.
          * @param thisArg  this argument for calling handler.
          */
         once<T>(h: EventHandlerContract<any> | EventHandlerContract<any>[], thisArg?: any): EventRegisterResultContract<any>;
         /**
          * Subscribes event raised.
-         * @param h  The callback.
+         * @param h The callback.
          * @param thisArg  this argument for calling handler.
          */
         subscribe(h: (newValue: T) => void, thisArg?: any): SubscriberCompatibleResultContract;
         /**
          * Subscribes event raised.
-         * @param h  The callback.
+         * @param h The callback.
          * @param thisArg  this argument for calling handler.
-         * @param convertor  A function to convert the event argument to the target data.
+         * @param convertor A function to convert the event argument to the target data.
          */
         subscribeWithConvertor<TValue>(h: (newValue: TValue) => void, thisArg?: any, convertor?: (newValue: T) => TValue): SubscriberCompatibleResultContract;
         /**
@@ -576,10 +580,10 @@ declare namespace DataSense {
         constructor();
         /**
          * Raises a specific event wth arugment.
-         * @param key  The event key.
-         * @param ev  The event argument.
-         * @param message  The additional information which will pass to the event listener handler.
-         * @param delay  A span in millisecond to delay to raise.
+         * @param key The event key.
+         * @param ev The event argument.
+         * @param message The additional information which will pass to the event listener handler.
+         * @param delay A span in millisecond to delay to raise.
          */
         fire(key: string, ev: any, message?: FireInfoContract | string, delay?: number | boolean): void;
         onAny(h: EventHandlerContract<KeyValueContract<any>> | EventHandlerContract<KeyValueContract<any>>[], thisArg?: any, options?: EventOptionsContract, disposableArray?: DisposableArrayContract): AnyEventRegisterResultContract;
@@ -609,30 +613,30 @@ declare namespace DataSense {
         get isFailed(): boolean;
         /**
          * Added a callback when the result is resolved.
-         * @param h  The callback.
+         * @param h The callback.
          * @param thisArg  this arg.
-         * @param delay  A span in millisecond to delay to process.
+         * @param delay A span in millisecond to delay to process.
          */
         onResolved(h: (value: T) => void, thisArg?: any, delay?: boolean | number): void;
         /**
          * Added a callback after a while. The callback will be called when the result is resolved.
-         * @param h  The callback.
+         * @param h The callback.
          * @param thisArg  this arg.
-         * @param delay  A span in millisecond to delay to process.
+         * @param delay A span in millisecond to delay to process.
          */
         onResolvedLater(h: (value: T) => void, thisArg?: any, delay?: boolean | number): void;
         /**
          * Added a callback when the result is rejected.
-         * @param h  The callback.
+         * @param h The callback.
          * @param thisArg  this arg.
-         * @param delay  A span in millisecond to delay to process.
+         * @param delay A span in millisecond to delay to process.
          */
         onRejected(h: (value: T) => void, thisArg?: any, delay?: boolean | number): void;
         /**
          * Added a callback after a while. The callback will be called when the result is rejected.
-         * @param h  The callback.
+         * @param h The callback.
          * @param thisArg  this arg.
-         * @param delay  A span in millisecond to delay to process.
+         * @param delay A span in millisecond to delay to process.
          */
         onRejectedLater(h: (value: T) => void, thisArg?: any, delay?: boolean | number): void;
         /**
@@ -661,19 +665,19 @@ declare namespace DataSense {
      * The observable and controller for resolving data.
      */
     class OnceController<T> extends OnceObservable<T> {
-        private _instance;
+        private __instance;
         /**
          * Initializes a new instance of the OnceController class.
          */
         constructor();
         /**
          * Sets the result data.
-         * @param value  The data value.
+         * @param value The data value.
          */
         resolve(value: T): void;
         /**
          * Sets the error information.
-         * @param err  The exception or error information data.
+         * @param err The exception or error information data.
          */
         reject(err: any): void;
     }
@@ -684,24 +688,24 @@ declare namespace DataSense {
         readonly key: string;
         readonly currentValue: T;
         readonly valueRequest: T;
-        readonly observable?: OnceObservable<T>;
-        readonly action?: "add" | "update" | "delete" | "unknown";
+        readonly observable?: OnceObservable<T> | undefined;
+        readonly action?: "add" | "update" | "delete" | "unknown" | undefined;
         /**
          * Initializes a new instance of the ChangingInfo class.
          */
-        constructor(key: string, currentValue: T, valueRequest: T, observable?: OnceObservable<T>, action?: "add" | "update" | "delete" | "unknown");
+        constructor(key: string, currentValue: T, valueRequest: T, observable?: OnceObservable<T> | undefined, action?: "add" | "update" | "delete" | "unknown" | undefined);
         /**
          * Added a callback when the result is resolved.
-         * @param h  The callback.
+         * @param h The callback.
          * @param thisArg  this arg.
-         * @param delay  A span in millisecond to delay to process.
+         * @param delay A span in millisecond to delay to process.
          */
         onResolved(h: (value: T) => void, thisArg?: any, delay?: boolean | number): void;
         /**
          * Added a callback when the result is rejected.
-         * @param h  The callback.
+         * @param h The callback.
          * @param thisArg  this arg.
-         * @param delay  A span in millisecond to delay to process.
+         * @param delay A span in millisecond to delay to process.
          */
         onRejected(h: (value: T) => void, thisArg?: any, delay?: boolean | number): void;
     }
@@ -709,51 +713,51 @@ declare namespace DataSense {
      * The information for data changed.
      */
     class ChangedInfo<T> {
-        readonly key: string;
+        readonly key: string | null;
         readonly action: ChangeActionContract;
         readonly success: boolean | undefined;
         readonly value: T;
         readonly oldValue: T;
         readonly valueRequest: T;
-        readonly error?: any;
+        readonly error?: any | undefined;
         /**
          * Initializes a new instance of the ChangedInfo class.
          */
-        constructor(key: string, action: ChangeActionContract, success: boolean | undefined, value: T, oldValue: T, valueRequest: T, error?: any);
+        constructor(key: string | null, action: ChangeActionContract, success: boolean | undefined, value: T, oldValue: T, valueRequest: T, error?: any | undefined);
         /**
          * Gets a value indicating whether the value has been changed.
          */
         get hasChanged(): boolean;
         /**
          * Creates an information instance described a value is changed.
-         * @param key  The property key.
-         * @param value  The new value of the property.
-         * @param oldValue  The old value of the property.
-         * @param action  The action kind of change.
-         * @param valueRequest  The property value request to update.
-         * @param error  The error information.
-         * @returns  A changed info object.
+         * @param key The property key.
+         * @param value The new value of the property.
+         * @param oldValue The old value of the property.
+         * @param action The action kind of change.
+         * @param valueRequest The property value request to update.
+         * @param error The error information.
+         * @returns A changed info object.
          */
-        static success<T>(key: string, value: T, oldValue: T, action?: ChangeActionContract | boolean, valueRequest?: T, error?: any): ChangedInfo<T>;
+        static success<T>(key: string | null, value: T, oldValue: T, action?: ChangeActionContract | boolean, valueRequest?: T, error?: any): ChangedInfo<T>;
         /**
          * Creates an information instance described a value is failed to change.
-         * @param key  The property key.
-         * @param value  The value of the property.
-         * @param valueRequest  The property value request to update.
-         * @param error  The error information.
-         * @returns  A changed info object.
+         * @param key The property key.
+         * @param value The value of the property.
+         * @param valueRequest The property value request to update.
+         * @param error The error information.
+         * @returns A changed info object.
          */
-        static fail<T>(key: string, value: T, valueRequest: T, error?: any): ChangedInfo<T>;
+        static fail<T>(key: string | null, value: T, valueRequest: T, error?: any): ChangedInfo<T>;
         /**
          * Append a set of changed info objects into an array.
-         * @param list  The array to push further items.
-         * @param items  The items to push.
+         * @param list The array to push further items.
+         * @param items The items to push.
          */
         static push(list: ChangedInfo<any>[], ...items: ChangedInfo<any>[]): void;
     }
     /**
      * Creates an event observable and controller.
-     * @returns  The event observable and controller.
+     * @returns The event observable and controller.
      */
     function createEvent(): EventController;
 }
@@ -824,17 +828,17 @@ declare namespace DataSense {
         readonly notifyReceived: SingleEventObservable<any>;
         /**
          * Initializes a new instance of the PropsObservable class.
-         * @param changer  A function to called that you can get the accessor of the properties and more by the argument.
+         * @param changer A function to called that you can get the accessor of the properties and more by the argument.
          */
         constructor(changer: PropsObservable | ((accessor: PropsObservableAccessorContract) => void));
         /**
          * Adds disposable objects so that they will be disposed when this instance is disposed.
-         * @param items  The objects to add.
+         * @param items The objects to add.
          */
         pushDisposable(...items: DisposableContract[]): number;
         /**
          * Removes the ones added here.
-         * @param items  The objects to remove.
+         * @param items The objects to remove.
          */
         removeDisposable(...items: DisposableContract[]): number;
         /**
@@ -843,90 +847,90 @@ declare namespace DataSense {
         getKeys(): string[];
         /**
          * Checks if the specific key is existed.
-         * @param key  The property key.
+         * @param key The property key.
          */
         hasProp(key: string): boolean;
         /**
          * Gets a value of the specific key.
-         * @param key  The property key.
+         * @param key The property key.
          */
         getProp(key: string, options?: GetterOptionsContract): any;
         /**
          * Gets the update time of the specific key.
-         * @param key  The property key.
+         * @param key The property key.
          */
         getPropUpdateTime(key: string): Date | undefined;
         /**
          * Gets the details information of the specific key.
-         * @param key  The property key.
-         * @returns  The prop details.
+         * @param key The property key.
+         * @returns The prop details.
          */
         getPropDetails<T>(key: string): PropDetailsContract<T>;
         /**
          * Gets a set of property values.
-         * @param keys  The property keys.
-         * @returns  The property values in an array.
+         * @param keys The property keys.
+         * @returns The property values in an array.
          */
         getPropsArray(keys: string[]): any[];
         /**
          * Gets a set of property values.
-         * @param keys  The property keys.
-         * @returns  The property values in an array.
+         * @param keys The property keys.
+         * @returns The property values in an array.
          */
         getPropsObject(keys: string[]): {
             [property: string]: any;
         };
         /**
          * Gets a set of property values.
-         * @param obj  The target object to set properties.
-         * @param keys  The property keys.
+         * @param obj The target object to set properties.
+         * @param keys The property keys.
          * @param ignoreIfExists  true if ignore to set property if already have one; otherwise, false.
-         * @returns  The count of property to set.
+         * @returns The count of property to set.
          */
-        fillPropsObject(obj: any, keys: string[], ignoreIfExists?: boolean): number;
+        fillPropsObject(obj: any, keys: string[], ignoreIfExists?: boolean): number | undefined;
         /**
          * Gets the details information of the specific key.
-         * @param keys  The property keys.
-         * @returns  The prop details array.
+         * @param keys The property keys.
+         * @returns The prop details array.
          */
         getPropsDetails(keys: string[]): PropDetailsContract<any>[];
         /**
          * Registers a flow so that it will be occurred as a pipeline when the property is changed.
-         * @param key  The property key.
-         * @param value  The flows.
-         * @returns  The state of register.
+         * @param key The property key.
+         * @param value The flows.
+         * @returns The state of register.
          */
         registerChangeFlow(key: string, ...value: ValueModifierContract<any>[]): ChangeFlowRegisteredContract;
         /**
          * Clears all flow of the specific property changing.
-         * @param key  The property key.
-         * @returns  The count of flow removed.
+         * @param key The property key.
+         * @returns The count of flow removed.
          */
         clearChangeFlow(key: string): number;
         /**
          * Registers an event listener on the speicific property is changing.
-         * @param key  The property key.
-         * @param h  The handler or handlers of the event listener.
+         * @param key The property key.
+         * @param h The handler or handlers of the event listener.
          * @param thisArg  this arg.
-         * @param options  The event listener options.
+         * @param options The event listener options.
          * @param disposableArray  An additional disposable array instance for push current event handler.
          */
         onPropChanging<T>(key: string, h: EventHandlerContract<ChangingInfo<T>> | EventHandlerContract<ChangingInfo<T>>[], thisArg?: any, options?: EventOptionsContract, disposableArray?: DisposableArrayContract): EventRegisterResultContract<ChangingInfo<T>>;
         /**
          * Registers an event listener on the speicific property has been changed.
-         * @param key  The property key.
-         * @param h  The handler or handlers of the event listener.
+         * @param key The property key.
+         * @param h The handler or handlers of the event listener.
          * @param thisArg  this arg.
-         * @param options  The event listener options.
+         * @param options The event listener options.
          * @param disposableArray  An additional disposable array instance for push current event handler.
          */
         onPropChanged<T>(key: string, h: EventHandlerContract<ChangedInfo<T>> | EventHandlerContract<ChangedInfo<T>>[], thisArg?: any, options?: EventOptionsContract, disposableArray?: DisposableArrayContract): EventRegisterResultContract<ChangedInfo<T>>;
         /**
          * Registers an event listener on the speicific property is failed to change.
-         * @param key  The property key.
-         * @param h  The handler or handlers of the event listener.
+         * @param key The property key.
+         * @param h The handler or handlers of the event listener.
          * @param thisArg  this arg.
-         * @param options  The event listener options.
+         * @param options The event listener options.
          * @param disposableArray  An additional disposable array instance for push current event handler.
          */
         onPropChangeFailed<T>(key: string, h: EventHandlerContract<ChangedInfo<T>> | EventHandlerContract<ChangedInfo<T>>[], thisArg?: any, options?: EventOptionsContract, disposableArray?: DisposableArrayContract): EventRegisterResultContract<any>;
@@ -935,90 +939,90 @@ declare namespace DataSense {
         onAnyPropChangeFailed(h: EventHandlerContract<ChangedInfo<any>> | EventHandlerContract<ChangedInfo<any>>[], thisArg?: any, options?: EventOptionsContract, disposableArray?: DisposableArrayContract): EventRegisterResultContract<ChangedInfo<any>>;
         /**
          * Registers an event listener on one or more properties have been changed.
-         * @param h  The handler or handlers of the event listener.
+         * @param h The handler or handlers of the event listener.
          * @param thisArg  this arg.
-         * @param options  The event listener options.
+         * @param options The event listener options.
          * @param disposableArray  An additional disposable array instance for push current event handler.
          */
         onPropsChanged(h: EventHandlerContract<ChangedInfoSetContract> | EventHandlerContract<ChangedInfoSetContract>[], thisArg?: any, options?: EventOptionsContract, disposableArray?: DisposableArrayContract): EventRegisterResultContract<ChangedInfoSetContract>;
         /**
          * Registers an event listener on a broadcast message of a specific property is received.
-         * @param key  The property key.
-         * @param h  The handler or handlers of the event listener.
+         * @param key The property key.
+         * @param h The handler or handlers of the event listener.
          * @param thisArg  this arg.
-         * @param options  The event listener options.
+         * @param options The event listener options.
          * @param disposableArray  An additional disposable array instance for push current event handler.
          */
         onPropBroadcastReceived(key: string, h: EventHandlerContract<any> | EventHandlerContract<any>[], thisArg?: any, options?: EventOptionsContract, disposableArray?: DisposableArrayContract): EventRegisterResultContract<any>;
         /**
          * Registers an event listener on a broadcast message is received.
-         * @param h  The handler or handlers of the event listener.
+         * @param h The handler or handlers of the event listener.
          * @param thisArg  this arg.
-         * @param options  The event listener options.
+         * @param options The event listener options.
          * @param disposableArray  An additional disposable array instance for push current event handler.
          */
         onBroadcastReceived(h: EventHandlerContract<any> | EventHandlerContract<any>[], thisArg?: any, options?: EventOptionsContract, disposableArray?: DisposableArrayContract): EventRegisterResultContract<any>;
         /**
          * Registers an event listener on a notification of a specific property is received.
-         * @param key  The property key.
-         * @param h  The handler or handlers of the event listener.
+         * @param key The property key.
+         * @param h The handler or handlers of the event listener.
          * @param thisArg  this arg.
-         * @param options  The event listener options.
+         * @param options The event listener options.
          * @param disposableArray  An additional disposable array instance for push current event handler.
          */
         onPropNotifyReceived(key: string, h: EventHandlerContract<any> | EventHandlerContract<any>[], thisArg?: any, options?: EventOptionsContract, disposableArray?: DisposableArrayContract): EventRegisterResultContract<any>;
         /**
          * Registers an event listener on a notification is received.
-         * @param h  The handler or handlers of the event listener.
+         * @param h The handler or handlers of the event listener.
          * @param thisArg  this arg.
-         * @param options  The event listener options.
+         * @param options The event listener options.
          * @param disposableArray  An additional disposable array instance for push current event handler.
          */
         onNotifyReceived(h: EventHandlerContract<any> | EventHandlerContract<any>[], thisArg?: any, options?: EventOptionsContract, disposableArray?: DisposableArrayContract): EventRegisterResultContract<any>;
         /**
          * Subscribes for what a specific property has been changed.
-         * @param key  The property key.
-         * @param h  The callback.
+         * @param key The property key.
+         * @param h The callback.
          * @param thisArg  this arg.
          */
         subscribeProp<T>(key: string, h: (newValue: T) => void, thisArg?: any): SubscriberCompatibleResultContract;
         /**
          * Subscribes for what one or more properties have been changed.
-         * @param h  The callback.
+         * @param h The callback.
          * @param thisArg  this arg.
          */
         subscribeProps(h: (changeSet: ChangedInfo<any>[]) => void, thisArg?: any): SubscriberCompatibleResultContract;
         /**
          * Sends a request message for a property.
-         * @param key  The property key.
-         * @param type  The request type.
-         * @param value  The data.
+         * @param key The property key.
+         * @param type The request type.
+         * @param value The data.
          */
         sendPropRequest(key: string, type: string, value: any): void;
         /**
          * Sends a request message.
-         * @param type  The request type.
-         * @param value  The data.
+         * @param type The request type.
+         * @param value The data.
          */
         sendRequest(type: string, value: any): void;
         /**
          * Sends a broadcast message for a property.
-         * @param key  The property key.
-         * @param data  The data.
-         * @param message  The additional information which will pass to the event listener handler.
+         * @param key The property key.
+         * @param data The data.
+         * @param message The additional information which will pass to the event listener handler.
          */
         sendPropBroadcast(key: string, data: any, message?: FireInfoContract | string): void;
         /**
          * Sends a broadcast message.
-         * @param data  The data.
-         * @param message  The additional information which will pass to the event listener handler.
+         * @param data The data.
+         * @param message The additional information which will pass to the event listener handler.
          */
         sendBroadcast(data: any, message?: FireInfoContract | string): void;
         /**
          * Creates an observable instance for a property.
-         * @param key  The property key.
+         * @param key The property key.
          */
-        createPropObservable<T>(key: string): ValueObservable<T>;
+        observableProp<T>(key: string): ValueObservable<T>;
         /**
          * Creates an observable instance.
          */
@@ -1046,11 +1050,7 @@ declare namespace DataSense {
      * Object property accessing and observing client.
      */
     class PropsClient extends PropsObservable {
-        private readonly _propSetter;
-        private readonly _sendPropNotify;
-        private readonly _sendNotify;
-        private readonly _registerPropRequestHandler;
-        private readonly _registerRequestHandler;
+        private readonly __innerStore;
         /**
          * Gets the data model with two-way bindings for its properties.
          */
@@ -1061,58 +1061,58 @@ declare namespace DataSense {
         constructor(defaultValue: any, modifier: (setter: (key: string, newValue: any, message?: SetterOptionsContract | string) => ValueResolveContract<any>) => void, propSetter: (key: string, value: any, message?: FireInfoContract | string) => ChangedInfo<any>, sendPropNotify: (key: string, data: any, message?: FireInfoContract | string) => void, sendNotify: (data: any, message?: FireInfoContract | string) => void, registerPropRequestHandler: (key: string, type: string, h: (owner: SimpleValueAccessorContract<any>, value: any) => void) => boolean, registerRequestHandler: (type: string, h: (owner: SimplePropsAccessorContract, value: any) => void) => boolean, additionalEvents: PropsFurtherEventsContract);
         /**
          * Sets a value of the specific key.
-         * @param key  The property key.
-         * @param value  The value of the property to set.
-         * @param message  A message for the setting event.
+         * @param key The property key.
+         * @param value The value of the property to set.
+         * @param message A message for the setting event.
          */
         setProp(key: string, value: any, message?: SetterOptionsContract | string): boolean;
         /**
          * Sets a value of the specific key. A status and further information will be returned.
-         * @param key  The property key.
-         * @param value  The value of the property to set.
-         * @param message  A message for the setting event.
+         * @param key The property key.
+         * @param value The value of the property to set.
+         * @param message A message for the setting event.
          */
         setPropForDetails<T>(key: string, value: T, message?: SetterOptionsContract | string): ChangedInfo<T>;
         /**
          * Sets a value of the specific key by a Promise.
-         * @param key  The property key.
-         * @param value  A Promise of the property to set.
-         * @param compatible  true if the value can also be a non-Promise; otherwise, false.
-         * @param message  A message for the setting event.
+         * @param key The property key.
+         * @param value A Promise of the property to set.
+         * @param compatible true if the value can also be a non-Promise; otherwise, false.
+         * @param message A message for the setting event.
          */
         setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: SetterOptionsContract | string): Promise<T>;
         /**
          * Sets a value of the specific key by an observable which can be subscribed.
-         * @param key  The property key.
-         * @param value  A Promise of the property to set.
-         * @param message  A message for the setting event.
-         * @param callbackfn  A function will be called on subscribed.
+         * @param key The property key.
+         * @param value A Promise of the property to set.
+         * @param message A message for the setting event.
+         * @param callbackfn A function will be called on subscribed.
          */
         setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: SetterOptionsContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any): SubscriberResultContract;
         /**
          * Send a notification for a speicific property.
-         * @param key  The property key.
-         * @param data  The data.
-         * @param message  A message for the setting event.
+         * @param key The property key.
+         * @param data The data.
+         * @param message A message for the setting event.
          */
         sendPropNotify(key: string, data: any, message?: FireInfoContract | string): void;
         /**
          * Send a notification.
-         * @param data  The data.
-         * @param message  A message for the setting event.
+         * @param data The data.
+         * @param message A message for the setting event.
          */
         sendNotify(data: any, message?: FireInfoContract | string): void;
         /**
          * Registers a handler to respond the request message for a property.
-         * @param key  The property key.
-         * @param type  The request type.
-         * @param h  The handler to respond the request message.
+         * @param key The property key.
+         * @param type The request type.
+         * @param h The handler to respond the request message.
          */
         registerPropRequestHandler(key: string, type: string, h: (owner: SimpleValueAccessorContract<any>, value: any) => void): boolean;
         /**
          * Registers a handler to respond the request message.
-         * @param type  The request type.
-         * @param h  The handler to respond the request message.
+         * @param type The request type.
+         * @param h The handler to respond the request message.
          */
         registerRequestHandler(type: string, h: (owner: SimplePropsAccessorContract, value: any) => void): boolean;
     }
@@ -1151,100 +1151,100 @@ declare namespace DataSense {
         }): Promise<T>;
         /**
          * Force to update a property.
-         * @param key  The property key.
-         * @param message  A message for the setting event.
+         * @param key The property key.
+         * @param message A message for the setting event.
          */
         forceUpdateProp(key: string, message?: FireInfoContract | string): void;
         /**
          * Sets a value of the specific key.
-         * @param key  The property key.
-         * @param value  The value of the property to set.
-         * @param message  A message for the setting event.
+         * @param key The property key.
+         * @param value The value of the property to set.
+         * @param message A message for the setting event.
          */
         setProp(key: string, value: any, message?: SetterOptionsContract | string): boolean;
         /**
          * Sets a value of the specific key. A status and further information will be returned.
-         * @param key  The property key.
-         * @param value  The value of the property to set.
-         * @param message  A message for the setting event.
+         * @param key The property key.
+         * @param value The value of the property to set.
+         * @param message A message for the setting event.
          */
         setPropForDetails<T>(key: string, value: T, message?: SetterOptionsContract | string): ChangedInfo<T>;
         /**
          * Sets a value of the specific key by a Promise.
-         * @param key  The property key.
-         * @param value  A Promise of the property to set.
+         * @param key The property key.
+         * @param value A Promise of the property to set.
          * @param compatible  true if the value can also be a non-Promise; otherwise, false.
-         * @param message  A message for the setting event.
+         * @param message A message for the setting event.
          */
         setPromiseProp<T>(key: string, value: Promise<T>, compatible?: boolean, message?: SetterOptionsContract | string): Promise<T>;
         /**
          * Sets a value of the specific key by an observable which can be subscribed.
-         * @param key  The property key.
-         * @param value  A Promise of the property to set.
-         * @param message  A message for the setting event.
-         * @param callbackfn  A function will be called on subscribed.
+         * @param key The property key.
+         * @param value A Promise of the property to set.
+         * @param message A message for the setting event.
+         * @param callbackfn A function will be called on subscribed.
          */
         setSubscribeProp<T>(key: string, value: SubscriberContract<T>, message?: SetterOptionsContract | string, callbackfn?: (ev: ChangedInfo<T>, message: FireInfoContract) => void, thisArg?: any): SubscriberResultContract;
         /**
          * Removes a property.
-         * @param key  The property key.
-         * @param message  A message for the setting event.
+         * @param key The property key.
+         * @param message A message for the setting event.
          */
         removeProp(key: string | string[], message?: FireInfoContract | string): number;
         /**
          * Batch sets properties.
-         * @param obj  The data with properties to override current ones.
-         * @param message  A message for the setting event.
+         * @param obj The data with properties to override current ones.
+         * @param message A message for the setting event.
          */
         setProps(obj: any | PropUpdateActionContract<any>[], message?: FireInfoContract | string): void;
         /**
          * Gets additional store information.
-         * @param key  The property key.
-         * @param storePropKey  The key of additional information.
+         * @param key The property key.
+         * @param storePropKey The key of additional information.
          */
         getPropStore(key: string, storePropKey: string): any;
         /**
          * Sets additional store information.
-         * @param key  The property key.
-         * @param storePropKey  The key of additional information.
-         * @param value  The value of additonal information.
+         * @param key The property key.
+         * @param storePropKey The key of additional information.
+         * @param value The value of additonal information.
          */
         setPropStore(key: string, storePropKey: string, value: any): void;
         /**
          * Removes the specific additional store information.
-         * @param key  The property key.
-         * @param storePropKeys  The key of additional information.
+         * @param key The property key.
+         * @param storePropKeys The key of additional information.
          */
         removePropStore(key: string, ...storePropKeys: string[]): void;
         /**
          * Send a notification for a speicific property.
-         * @param key  The property key.
-         * @param data  The data.
-         * @param message  The additional information which will pass to the event listener handler.
+         * @param key The property key.
+         * @param data The data.
+         * @param message The additional information which will pass to the event listener handler.
          */
         sendPropNotify(key: string, data: any, message?: FireInfoContract | string): void;
         /**
          * Send a notification.
-         * @param data  The data.
-         * @param message  The additional information which will pass to the event listener handler.
+         * @param data The data.
+         * @param message The additional information which will pass to the event listener handler.
          */
         sendNotify(data: any, message?: FireInfoContract | string): void;
         /**
          * Registers a handler to respond the request message for a property.
-         * @param key  The property key.
-         * @param type  The request type.
-         * @param h  The handler to respond the request message.
+         * @param key The property key.
+         * @param type The request type.
+         * @param h The handler to respond the request message.
          */
         registerPropRequestHandler(key: string, type: string, h: (owner: SimpleValueAccessorContract<any>, value: any) => void): boolean;
         /**
          * Registers a handler to respond the request message.
-         * @param type  The request type.
-         * @param h  The handler to respond the request message.
+         * @param type The request type.
+         * @param h The handler to respond the request message.
          */
         registerRequestHandler(type: string, h: (owner: SimplePropsAccessorContract, value: any) => void): boolean;
         /**
          * Creates a controller client for a property.
-         * @param key  The property key.
+         * @param key The property key.
          */
         createPropClient<T>(key: string): ValueClient<T>;
         /**
@@ -1254,8 +1254,8 @@ declare namespace DataSense {
     }
     /**
      * Creates a props controller with accessor and observable.
-     * @param initObj  The optional initialized properties.
-     * @returns  The props controller with accessor and observable.
+     * @param initObj The optional initialized properties.
+     * @returns The props controller with accessor and observable.
      */
     function createProps(initObj?: {
         [property: string]: any;
@@ -1292,12 +1292,12 @@ declare namespace DataSense {
         /**
          * Gets the retry in millisecond.
          */
-        get retry(): number;
+        get retry(): number | undefined;
         /**
          * Gets the data in JSON.
          * @returns The data object parsed by JSON.
          */
-        dataJson<T = Record<string, unknown>>(): T;
+        dataJson<T = Record<string, unknown>>(): T | undefined;
         /**
          * Gets a specific field.
          * @param key The field key.
@@ -1326,16 +1326,16 @@ declare namespace DataSense {
         /**
          * Gets the URL.
          */
-        get url(): string;
+        get url(): string | undefined;
         /**
          * Gets the state.
          */
-        get readyState(): number;
+        get readyState(): number | undefined;
         /**
          * Waits and gets the final result.
          * @returns The Server-Sent Event items array.
          */
-        wait(): Promise<ServerSentEventItem[]>;
+        wait(): Promise<ServerSentEventItem[]> | undefined;
     }
 }
 declare namespace DataSense {
@@ -1459,7 +1459,7 @@ declare namespace DataSense {
      * @param h  The handler.
      * @param span  true if process delay; false if process immediately; or a number if process after the specific milliseconds.
      */
-    function delay(h: Function, span: number | boolean): DisposableContract;
+    function delay(h: Function, span?: number | boolean | null): DisposableContract;
     /**
      * Processes a handler and ignore the up coming ones in a specific time span.
      * @param h  The handler to process.
@@ -1628,10 +1628,7 @@ declare namespace DataSense {
      * Data property accessing and observing client.
      */
     class ValueClient<T> extends ValueObservable<T> {
-        private readonly _setter;
-        private readonly _forceUpdate;
-        private readonly _sendNotify;
-        private readonly _registerRequestHandler;
+        private readonly __innerStore;
         /**
          * Initializes a new instance of the ValueClient class.
          */
@@ -1684,8 +1681,7 @@ declare namespace DataSense {
      * Data observable and controller.
      */
     class ValueController<T> extends ValueObservable<T> {
-        private _accessor;
-        private _observing;
+        private __innerStore;
         /**
          * Gets the formatter/convertor.
          */

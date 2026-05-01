@@ -4,7 +4,7 @@ export type ChangeActionContract = "add" | "remove" | "update" | "delta" | "none
 
 export type EventHandlerContract<T> = (ev: T, controller: EventListenerControllerContract) => void;
 
-export type OccurModelContract<T> = { h: (value: T) => void, thisArg: any, delay: boolean | number };
+export type OccurModelContract<T> = { h: (value: T) => void, thisArg: any, delay: boolean | number | undefined };
 
 export type FireContract = (key: string, ev: any, message?: FireInfoContract | string) => void;
 
@@ -184,26 +184,26 @@ export interface EventListenerControllerContract extends DisposableContract {
 
     /**
      * Checks if the given temp store data is existed.
-     * @param propKey  The store data key.
+     * @param propKey The store data key.
      */
     hasStoreData(propKey: string): boolean,
 
     /**
      * Gets a specific temp store data.
-     * @param propKey  The store data key.
+     * @param propKey The store data key.
      */
     getStoreData(propKey: string): any,
 
     /**
      * Sets a specific temp store data.
-     * @param propKey  The store data key.
-     * @param propValue  The store data value.
+     * @param propKey The store data key.
+     * @param propValue The store data value.
      */
     setStoreData(propKey: string, propValue: any): void,
 
     /**
      * Removes the specific temp store data.
-     * @param propKey  The store data key.
+     * @param propKey The store data key.
      */
     removeStoreData(...propKey: string[]): number
 }
@@ -231,8 +231,8 @@ export interface EventRegisterResultContract<T> extends DisposableArrayContract 
 
     /**
      * Forces to fire an event.
-     * @param ev  The event argument.
-     * @param message  The additional event information or message.
+     * @param ev The event argument.
+     * @param message The additional event information or message.
      */
     fire(ev: T, message?: FireInfoContract | string): void
 }
@@ -250,9 +250,9 @@ export interface AnyEventRegisterResultContract extends DisposableContract {
 
     /**
      * Forces to fire an event.
-     * @param key  The event key.
-     * @param ev  The event argument.
-     * @param message  The additional event information or message.
+     * @param key The event key.
+     * @param ev The event argument.
+     * @param message The additional event information or message.
      */
     fire(key: string, ev: any, message?: FireInfoContract | string): void
 }
@@ -262,8 +262,8 @@ export interface AnyEventRegisterResultContract extends DisposableContract {
  */
 export class EventObservable implements DisposableArrayContract {
     private readonly _instance: {
-        push(key: string, obj: any): number,
-        remove(key: string, obj?: any): number,
+        push(key: string | null, obj: any): number,
+        remove(key: string | null, obj?: any): number,
         fire(key: string, ev: any, message?: FireInfoContract | string, obj?: any): void
     } & DisposableArrayContract;
 
@@ -274,11 +274,11 @@ export class EventObservable implements DisposableArrayContract {
 
     /**
      * Initializes a new instance of the EventObservable class.
-     * @param firer  The handler to fire.
+     * @param firer The handler to fire.
      */
     public constructor(firer: EventObservable | ((fire: FireContract, onAny: OnAnyContract) => void), mapKey?: string | ((key: string) => string)) {
         let disposable = new DisposableArray();
-        let getKey = (key: string) => {
+        let getKey = (key: string | null) => {
             if (!mapKey || !key || typeof key !== "string") return key;
             if (typeof mapKey === "function") return mapKey(key);
             if (typeof mapKey === "string") return mapKey.replace("{0}", key).replace("{0}", key).replace("{0}", key);
@@ -300,7 +300,7 @@ export class EventObservable implements DisposableArrayContract {
                     return typeof firer._instance.remove === "function" ? firer._instance.remove(getKey(key), obj) : 0;
                 },
                 fire(key, ev, message?, obj?) {
-                    if (typeof firer._instance.fire === "function") firer._instance.fire(getKey(key), ev, message, obj);
+                    if (typeof firer._instance.fire === "function") firer._instance.fire(getKey(key)!, ev, message, obj);
                 },
                 pushDisposable(...items) {
                     return disposable.pushDisposable(...items);
@@ -319,7 +319,7 @@ export class EventObservable implements DisposableArrayContract {
         this.hasKeyMap = !!mapKey;
         let store: any = {};
         let furtherHandlers: any[] = [];
-        let remove = (key: string, obj: any) => {
+        let remove = (key: string | null, obj: any) => {
             if (key === null) {
                 if (obj) return Collection.remove(furtherHandlers, obj);
                 let count2 = furtherHandlers.length;
@@ -346,7 +346,7 @@ export class EventObservable implements DisposableArrayContract {
             latestFireDate: Date,
             store: any,
             count: number
-        }, ev: any, message: FireInfoContract | string, removing: KeyValueContract<any>[], further: boolean) => {
+        }, ev: any, message: FireInfoContract | string | undefined, removing: OptionalKeyValueContract<any>[], further: boolean) => {
             if (obj.isInvalid) return;
             let isInvalid = false;
             if (obj.invalid) {
@@ -557,7 +557,7 @@ export class EventObservable implements DisposableArrayContract {
 
     /**
      * Adds disposable objects so that they will be disposed when this instance is disposed.
-     * @param items  The objects to add.
+     * @param items The objects to add.
      */
     public pushDisposable(...items: DisposableContract[]) {
         return this._instance.pushDisposable(...items);
@@ -565,7 +565,7 @@ export class EventObservable implements DisposableArrayContract {
 
     /**
      * Removes the ones added here.
-     * @param items  The objects to remove.
+     * @param items The objects to remove.
      */
     public removeDisposable(...items: DisposableContract[]) {
         return this._instance.removeDisposable(...items);
@@ -573,10 +573,10 @@ export class EventObservable implements DisposableArrayContract {
 
     /**
      * Registers an event listener.
-     * @param key  The event key.
-     * @param h  The handler or handlers of the event listener.
+     * @param key The event key.
+     * @param h The handler or handlers of the event listener.
      * @param thisArg  this arg.
-     * @param options  The event listener options.
+     * @param options The event listener options.
      * @param disposableArray  An additional disposable array instance for push current event handler.
      */
     public on<T>(
@@ -690,8 +690,8 @@ export class EventObservable implements DisposableArrayContract {
 
     /**
      * Registers an event listener that will be raised once at most.
-     * @param key  The event key.
-     * @param h  The handler or handlers of the event listener.
+     * @param key The event key.
+     * @param h The handler or handlers of the event listener.
      * @param thisArg  this arg.
      */
     public once<T>(
@@ -704,7 +704,7 @@ export class EventObservable implements DisposableArrayContract {
 
     /**
      * Clears all the specific event listeners
-     * @param key  The event key.
+     * @param key The event key.
      */
     public clearOn(key: string) {
         this._instance.remove(key);
@@ -712,7 +712,7 @@ export class EventObservable implements DisposableArrayContract {
 
     /**
      * Creates a single event observable.
-     * @param key  The event key.
+     * @param key The event key.
      */
     public createSingleObservable<T>(key: string) {
         return new SingleEventObservable<T>(this, key);
@@ -751,7 +751,7 @@ export class EventObservable implements DisposableArrayContract {
 
     /**
      * Creates an observable instance so that any event listeners and subscribers will be disposed automatically when that instance is disposed.
-     * @param mapKey  A string or a function to map keys.
+     * @param mapKey A string or a function to map keys.
      */
     public createMappedObservable(mapKey: string | ((key: string) => string)) {
         return new EventObservable(this, mapKey);
@@ -774,7 +774,7 @@ export class EventObservable implements DisposableArrayContract {
                 return 0;
             },
             get registerDate(): Date {
-                return undefined;
+                return new Date();
             },
             get state(): "failure" {
                 return "failure";
@@ -809,9 +809,9 @@ export class EventObservable implements DisposableArrayContract {
         eventType: string | keyof HTMLElementEventMap
     ) {
         let event = new EventController();
-        let listener = (ev: T) => {
+        let listener = ((ev: T) => {
             event.fire(eventType, ev);
-        };
+        }) as unknown as EventListener;
         dom.addEventListener(eventType, listener);
         let obs = event.createSingleObservable<T>(eventType);
         obs.pushDisposable({
@@ -832,17 +832,17 @@ export class SingleEventObservable<T> implements DisposableArrayContract {
 
     /**
      * Initializes a new instance of the SingleEventObservable class.
-     * @param eventObservable  The event observable.
-     * @param key  The event key.
+     * @param eventObservable The event observable.
+     * @param key The event key.
      */
     constructor(eventObservable: EventObservable, public readonly key: string) {
-        this._eventObservable = eventObservable && eventObservable instanceof EventObservable ? eventObservable : new EventObservable(null);
+        this._eventObservable = eventObservable && eventObservable instanceof EventObservable ? eventObservable : new EventObservable(null as unknown as EventObservable);
         eventObservable.pushDisposable(this);
     }
 
     /**
      * Adds disposable objects so that they will be disposed when this instance is disposed.
-     * @param items  The objects to add.
+     * @param items The objects to add.
      */
     public pushDisposable(...items: DisposableContract[]) {
         return this._disposable.pushDisposable(...items);
@@ -850,7 +850,7 @@ export class SingleEventObservable<T> implements DisposableArrayContract {
 
     /**
      * Removes the ones added here.
-     * @param items  The objects to remove.
+     * @param items The objects to remove.
      */
     public removeDisposable(...items: DisposableContract[]) {
         return this._disposable.removeDisposable(...items);
@@ -858,10 +858,10 @@ export class SingleEventObservable<T> implements DisposableArrayContract {
 
     /**
      * Adds event listener.
-     * @param h  The handler.
+     * @param h The handler.
      * @param thisArg  this argument for calling handler.
-     * @param options  The options to control how the handler processes.
-     * @param disposabelArray  The disposable array used to push the listener result.
+     * @param options The options to control how the handler processes.
+     * @param disposabelArray The disposable array used to push the listener result.
      */
     public on(
         h: EventHandlerContract<T> | EventHandlerContract<T>[],
@@ -876,7 +876,7 @@ export class SingleEventObservable<T> implements DisposableArrayContract {
 
     /**
      * Adds event listener for one time raised.
-     * @param h  The handler.
+     * @param h The handler.
      * @param thisArg  this argument for calling handler.
      */
     public once<T>(
@@ -890,7 +890,7 @@ export class SingleEventObservable<T> implements DisposableArrayContract {
 
     /**
      * Subscribes event raised.
-     * @param h  The callback.
+     * @param h The callback.
      * @param thisArg  this argument for calling handler.
      */
     public subscribe(h: (newValue: T) => void, thisArg?: any): SubscriberCompatibleResultContract {
@@ -901,9 +901,9 @@ export class SingleEventObservable<T> implements DisposableArrayContract {
 
     /**
      * Subscribes event raised.
-     * @param h  The callback.
+     * @param h The callback.
      * @param thisArg  this argument for calling handler.
-     * @param convertor  A function to convert the event argument to the target data.
+     * @param convertor A function to convert the event argument to the target data.
      */
     public subscribeWithConvertor<TValue>(h: (newValue: TValue) => void, thisArg?: any, convertor?: (newValue: T) => TValue): SubscriberCompatibleResultContract {
         let result = this._eventObservable.subscribeSingle<TValue>(this.key, h, thisArg, convertor);
@@ -937,22 +937,24 @@ export class EventController extends EventObservable {
      * Initializes a new instance of the EventController class.
      */
     constructor() {
-        let f: FireContract;
-        let o: OnAnyContract;
+        const inner: {
+            f?: FireContract;
+            o?: OnAnyContract;
+        } = {}
         super((fire, onAny) => {
-            f = fire;
-            o = onAny;
+            inner.f = fire;
+            inner.o = onAny;
         });
-        this._fireHandler = f;
-        this._onAny = o;
+        this._fireHandler = inner.f!;
+        this._onAny = inner.o!;
     }
 
     /**
      * Raises a specific event wth arugment.
-     * @param key  The event key.
-     * @param ev  The event argument.
-     * @param message  The additional information which will pass to the event listener handler.
-     * @param delay  A span in millisecond to delay to raise.
+     * @param key The event key.
+     * @param ev The event argument.
+     * @param message The additional information which will pass to the event listener handler.
+     * @param delay A span in millisecond to delay to raise.
      */
     public fire(key: string, ev: any, message?: FireInfoContract | string, delay?: number | boolean): void {
         DataSense.delay(() => {
@@ -1017,7 +1019,7 @@ export class OnceObservable<T> {
         if (typeof executor !== "function") return;
         let process = (success: boolean, value: any) => {
             if (this._result.success !== undefined) return;
-            let list: OccurModelContract<T>[];
+            let list: OccurModelContract<T>[] | undefined;
             if (success) {
                 this._result.value = value;
                 this._result.success = true;
@@ -1067,9 +1069,9 @@ export class OnceObservable<T> {
 
     /**
      * Added a callback when the result is resolved.
-     * @param h  The callback.
+     * @param h The callback.
      * @param thisArg  this arg.
-     * @param delay  A span in millisecond to delay to process.
+     * @param delay A span in millisecond to delay to process.
      */
     public onResolved(h: (value: T) => void, thisArg?: any, delay?: boolean | number) {
         if (this._result.success === true) {
@@ -1084,9 +1086,9 @@ export class OnceObservable<T> {
 
     /**
      * Added a callback after a while. The callback will be called when the result is resolved.
-     * @param h  The callback.
+     * @param h The callback.
      * @param thisArg  this arg.
-     * @param delay  A span in millisecond to delay to process.
+     * @param delay A span in millisecond to delay to process.
      */
     public onResolvedLater(h: (value: T) => void, thisArg?: any, delay?: boolean | number) {
         DataSense.delay(() => {
@@ -1096,9 +1098,9 @@ export class OnceObservable<T> {
 
     /**
      * Added a callback when the result is rejected.
-     * @param h  The callback.
+     * @param h The callback.
      * @param thisArg  this arg.
-     * @param delay  A span in millisecond to delay to process.
+     * @param delay A span in millisecond to delay to process.
      */
     public onRejected(h: (value: T) => void, thisArg?: any, delay?: boolean | number) {
         if (this._result.success === false) {
@@ -1113,9 +1115,9 @@ export class OnceObservable<T> {
 
     /**
      * Added a callback after a while. The callback will be called when the result is rejected.
-     * @param h  The callback.
+     * @param h The callback.
      * @param thisArg  this arg.
-     * @param delay  A span in millisecond to delay to process.
+     * @param delay A span in millisecond to delay to process.
      */
     public onRejectedLater(h: (value: T) => void, thisArg?: any, delay?: boolean | number) {
         DataSense.delay(() => {
@@ -1164,7 +1166,7 @@ export class OnceObservable<T> {
  * The observable and controller for resolving data.
  */
 export class OnceController<T> extends OnceObservable<T> {
-    private _instance: {
+    private __instance!: {
         resolve(value: T): void,
         reject(err: any): void
     };
@@ -1173,33 +1175,30 @@ export class OnceController<T> extends OnceObservable<T> {
      * Initializes a new instance of the OnceController class.
      */
     constructor() {
-        let a: {
-            resolve(value: T): void,
-            reject(err: any): void
-        };
+        let cache: any = undefined;
         super((resolve, reject) => {
-            a = {
+            cache = {
                 resolve: resolve,
                 reject: reject
             };
         });
-        this._instance = a;
+        this.__instance = cache;
     }
 
     /**
      * Sets the result data.
-     * @param value  The data value.
+     * @param value The data value.
      */
     resolve(value: T) {
-        this._instance.resolve(value);
+        this.__instance.resolve(value);
     }
 
     /**
      * Sets the error information.
-     * @param err  The exception or error information data.
+     * @param err The exception or error information data.
      */
     reject(err: any) {
-        this._instance.reject(err);
+        this.__instance.reject(err);
     }
 }
 
@@ -1222,9 +1221,9 @@ export class ChangingInfo<T> {
 
     /**
      * Added a callback when the result is resolved.
-     * @param h  The callback.
+     * @param h The callback.
      * @param thisArg  this arg.
-     * @param delay  A span in millisecond to delay to process.
+     * @param delay A span in millisecond to delay to process.
      */
     public onResolved(h: (value: T) => void, thisArg?: any, delay?: boolean | number) {
         if (this.observable) this.observable.onResolved(h, thisArg, delay);
@@ -1232,9 +1231,9 @@ export class ChangingInfo<T> {
 
     /**
      * Added a callback when the result is rejected.
-     * @param h  The callback.
+     * @param h The callback.
      * @param thisArg  this arg.
-     * @param delay  A span in millisecond to delay to process.
+     * @param delay A span in millisecond to delay to process.
      */
     public onRejected(h: (value: T) => void, thisArg?: any, delay?: boolean | number) {
         if (this.observable) this.observable.onRejected(h, thisArg, delay);
@@ -1249,7 +1248,7 @@ export class ChangedInfo<T> {
      * Initializes a new instance of the ChangedInfo class.
      */
     constructor(
-        public readonly key: string,
+        public readonly key: string | null,
         public readonly action: ChangeActionContract,
         public readonly success: boolean | undefined,
         public readonly value: T,
@@ -1267,15 +1266,15 @@ export class ChangedInfo<T> {
 
     /**
      * Creates an information instance described a value is changed.
-     * @param key  The property key.
-     * @param value  The new value of the property.
-     * @param oldValue  The old value of the property.
-     * @param action  The action kind of change.
-     * @param valueRequest  The property value request to update.
-     * @param error  The error information.
-     * @returns  A changed info object.
+     * @param key The property key.
+     * @param value The new value of the property.
+     * @param oldValue The old value of the property.
+     * @param action The action kind of change.
+     * @param valueRequest The property value request to update.
+     * @param error The error information.
+     * @returns A changed info object.
      */
-    public static success<T>(key: string, value: T, oldValue: T, action?: ChangeActionContract | boolean, valueRequest?: T, error?: any) {
+    public static success<T>(key: string | null, value: T, oldValue: T, action?: ChangeActionContract | boolean, valueRequest?: T, error?: any) {
         if (!action) {
             if (key) {
                 if (value === oldValue) action = "none";
@@ -1289,25 +1288,25 @@ export class ChangedInfo<T> {
             action = value === oldValue ? "none" : "update";
         }
 
-        return new ChangedInfo<T>(key, action, true, value, oldValue, arguments.length > 4 ? valueRequest : value, error);
+        return new ChangedInfo<T>(key, action, true, value, oldValue, arguments.length > 4 ? valueRequest as T : value, error);
     }
 
     /**
      * Creates an information instance described a value is failed to change.
-     * @param key  The property key.
-     * @param value  The value of the property.
-     * @param valueRequest  The property value request to update.
-     * @param error  The error information.
-     * @returns  A changed info object.
+     * @param key The property key.
+     * @param value The value of the property.
+     * @param valueRequest The property value request to update.
+     * @param error The error information.
+     * @returns A changed info object.
      */
-    public static fail<T>(key: string, value: T, valueRequest: T, error?: any) {
+    public static fail<T>(key: string | null, value: T, valueRequest: T, error?: any) {
         return new ChangedInfo<T>(key, "none", false, value, value, valueRequest, error);
     }
 
     /**
      * Append a set of changed info objects into an array.
-     * @param list  The array to push further items.
-     * @param items  The items to push.
+     * @param list The array to push further items.
+     * @param items The items to push.
      */
     public static push(list: ChangedInfo<any>[], ...items: ChangedInfo<any>[]): void {
         if (!list) return;
@@ -1327,7 +1326,7 @@ export class ChangedInfo<T> {
 
 /**
  * Creates an event observable and controller.
- * @returns  The event observable and controller.
+ * @returns The event observable and controller.
  */
 export function createEvent() {
     return new EventController();

@@ -1,7 +1,20 @@
 namespace DataSense {
 
+/**
+ * The action result with unsubscribe handler.
+ */
+interface UnsubscribeInstanceContract {
+    unsubscribe(): void;
+}
+
+/**
+ * The subscriber.
+ */
 export type SubscriberCompatibleResultContract = DisposableContract & (() => void);
 
+/**
+ * The subscriber.
+ */
 export type SubscriberResultContract = DisposableContract | (() => void) | SubscriberCompatibleResultContract;
 
 /**
@@ -16,6 +29,11 @@ export interface DisposableContract {
 
 export interface KeyValueContract<T> {
     key: string;
+    value: T;
+}
+
+export interface OptionalKeyValueContract<T> {
+    key: string | null;
     value: T;
 }
 
@@ -53,12 +71,13 @@ export class DisposableArray implements DisposableArrayContract {
      */
     public push(...items: DisposableContract[]) {
         let count = 0;
+        const self = this;
         items.forEach(item => {
-            if (!item || this._list.indexOf(item) >= 0) return;
-            this._list.push(item);
+            if (!item || self._list.indexOf(item) >= 0) return;
+            self._list.push(item);
             if (typeof (item as DisposableArrayContract).pushDisposable === "function") (item as DisposableArrayContract).pushDisposable({
                 dispose() {
-                    Collection.remove(this._list, item);
+                    Collection.remove(self._list, item);
                 }
             });
             count++;
@@ -112,11 +131,19 @@ export class DisposableArray implements DisposableArrayContract {
         if (!(disposable instanceof Array)) disposable = [disposable];
         let listFailed: DisposableContract[] = [];
         disposable.forEach(item => {
-            if (!item || typeof item.dispose !== "function") return;
-            try {
-                item.dispose();
-            } catch (ex) {
-                listFailed.push(item);
+            if (!item) return;
+            if (typeof item.dispose !== "function") {
+                try {
+                    if (typeof (item as unknown as UnsubscribeInstanceContract).unsubscribe === "function")
+                        (item as unknown as UnsubscribeInstanceContract).unsubscribe();
+                } catch {
+                }
+            } else {
+                try {
+                    item.dispose();
+                } catch (ex) {
+                    listFailed.push(item);
+                }
             }
         });
         listFailed.forEach(item => {

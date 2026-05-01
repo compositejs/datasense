@@ -14,7 +14,7 @@ testCase.add("Access", () => {
     assert.equals(obj.getProp("name"), "abc");
 
     // Add an event listener occurred after the value is changed.
-    let nextValue: string;
+    let nextValue!: string;
     obj.onPropChanged<string>("name", ev => {
         assert.equals(ev.key, "name");
 
@@ -85,7 +85,7 @@ testCase.add("Access", () => {
 
 testCase.add("Observable", () => {
     let obj = new DataSense.PropsController();
-    let emptyKey: string;
+    let emptyKey!: string;
     obj.emptyPropRequested.on(ev => {
         emptyKey = ev.key;
     });
@@ -125,7 +125,7 @@ testCase.add("Observable", () => {
     assert.equals(obs.getProp("key"), "opq");
 
     // The controller and client can send notify to all.
-    let notifyMessage: string;
+    let notifyMessage!: string;
     obs.onNotifyReceived(ev => {
         notifyMessage = ev;
     });
@@ -169,8 +169,8 @@ testCase.add("Property", () => {
 
     // Create some property observables.
     let propName = obj.createPropClient("name");
-    let propName2 = obj.createPropObservable("name");
-    let propValue = obj.createPropObservable("value");
+    let propName2 = obj.observableProp("name");
+    let propValue = obj.observableProp("value");
 
     // Check their values.
     assert.equals(propName.get(), "abcdefg");
